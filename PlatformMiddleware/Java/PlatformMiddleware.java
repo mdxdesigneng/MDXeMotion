@@ -39,15 +39,19 @@ public class PlatformMiddleware {
 	
 	private void processMsg(PlatformApi.msgFields msg) {
       //System.out.format("pre shape: %f,%f,%f, %f,%f,%f\n",msg.x, msg.y, msg.z, msg.pitch, msg.roll, msg.yaw);	
-		   msg = PlatformApi.shapeData(msg); // apply gain and washout		      
-		   transform.applyTranslationAndRotation(new PVector(msg.x, msg.y, msg.z), 
-				                                 new PVector(msg.pitch, msg.roll, msg.yaw));
-		   // todo - code needed to use transform to create raw muscle length messages
-		   //  for testing form xyzpry message 
-		   chairItf.sendXyzrpy(msg);
-	 
-	}
-	
+		   if( msg.isRaw ) {
+			   chairItf.sendRaw(msg);
+		   }
+		   else {
+		       msg = PlatformApi.shapeData((PlatformApi.xyzMsg)msg); // apply gain and washout only if xyzMsg		   
+		       transform.applyTranslationAndRotation(new PVector(msg.v[0], msg.v[1], msg.v[2]),
+				                                     new PVector(msg.v[3], msg.v[4], msg.v[5]));
+		       // todo - transform method call above should use xyzGet methods as args
+		       // todo - code needed to use transform to get raw muscle length messages
+		       //  for testing form xyzpry message 
+		       chairItf.sendXyzrpy((PlatformApi.xyzMsg)msg);
+		   }	 
+	}	
 	
 	public static void main(String[] args) {
 		System.out.println("Platform Middleware Prototype");	

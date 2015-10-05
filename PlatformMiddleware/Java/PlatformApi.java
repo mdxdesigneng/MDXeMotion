@@ -16,13 +16,35 @@ import org.json.simple.parser.ParseException;
  */
 
 public class PlatformApi extends Thread {
-	public class msgFields {
-		float x;
-		float y;
-		float z;
-		float roll;
-		float pitch;
-		float yaw;
+	
+	public abstract class msgFields {
+		public boolean isRaw;
+		public float v[];
+		public msgFields() {
+		   v = new float[6];
+		}	
+	}
+	
+	public class rawMsg extends msgFields {
+		public rawMsg() {isRaw = true;}
+	}
+
+	public class xyzMsg extends msgFields {
+		public xyzMsg() {isRaw = false;}
+		
+		float getX()    { return v[0]; }
+		float getY()    { return v[1]; } 
+		float getZ()    { return v[2]; } 
+		float getRoll() { return v[3]; } 
+		float getPitch(){ return v[4]; } 
+		float getYaw()  { return v[5]; } 
+		
+		void setX(float val)    { v[0] = val; }
+		void setY(float val)    { v[1] = val; } 
+		void setZ(float val)    { v[2] = val; } 
+		void setRoll(float val) { v[3] = val; } 
+		void setPitch(float val){ v[4] = val; } 
+		void setYaw(float val)  { v[5] = val; } 
 	}
 
 	private static class config {
@@ -81,24 +103,24 @@ public class PlatformApi extends Thread {
 		washedZAccel=0;
 	}
 	
-	public static msgFields shapeData(msgFields msg) {
-	    msg.x *= cfg.gainX * cfg.gain;
-	    msg.y *= cfg.gainY * cfg.gain;
-	    msg.z *= cfg.gainZ * cfg.gain;
-	    msg.roll *= cfg.gainRoll * cfg.gain;
-	    msg.pitch *=cfg.gainPitch * cfg.gain;
-	    msg.yaw *= cfg.gainYaw *cfg.gain;
+	public static xyzMsg shapeData(xyzMsg msg) {
+	    msg.setX( msg.getX() * cfg.gainX * cfg.gain);
+	    msg.setY( msg.getY() * cfg.gainY * cfg.gain);
+	    msg.setZ( msg.getZ() * cfg.gainZ * cfg.gain);
+	    msg.setRoll( msg.getRoll() * cfg.gainRoll * cfg.gain);
+	    msg.setPitch(msg.getPitch() * cfg.gainPitch * cfg.gain);
+	    msg.setYaw(msg.getYaw() * cfg.gainYaw *cfg.gain);
 	    
 	    // calculate washout	 	
 	    if( prevYaw > 900)
-	    	prevYaw = msg.yaw; // sets yaw to 0 at startup
-	    float yawDelta = msg.yaw - prevYaw ;
+	    	prevYaw = msg.getYaw(); // sets yaw to 0 at startup
+	    float yawDelta = msg.getYaw() - prevYaw ;
 	    if ( yawDelta < -1 ) yawDelta += 2 ;
 	    if ( yawDelta > 1 ) yawDelta -= 2 ; 
 	    washedYaw = cfg.washoutYaw * ( washedYaw + yawDelta );
 	    //System.out.format("yaw washout- msg:%f, delta:%f, washed:%f\n",msg.yaw, yawDelta, washedYaw);	
-	    prevYaw =  msg.yaw;
-	    msg.yaw = washedYaw;
+	    prevYaw =  msg.getYaw();
+	    msg.setYaw( washedYaw);
 	    return msg;
 	}
 
@@ -119,22 +141,45 @@ public class PlatformApi extends Thread {
 	 return val;
 	}
 
-	void parseRaw(boolean isRealUnits, JSONArray values) {
+	void parseRaw(boolean isNormalized, JSONArray values) {
+		// System.out.print(" parseRaw "); System.out.println( values);
+		if (isNormalized) { // for now, only add if normalised - todo
+			rawMsg msg = new rawMsg();
+			try {
+				msg.v[0] = Float.valueOf(values.get(0).toString()).floatValue();
+				msg.v[1] = Float.valueOf(values.get(1).toString()).floatValue();
+				msg.v[2] = Float.valueOf(values.get(2).toString()).floatValue();
+				msg.v[3] = Float.valueOf(values.get(3).toString()).floatValue();
+				msg.v[4] = Float.valueOf(values.get(4).toString()).floatValue();
+				msg.v[5] = Float.valueOf(values.get(5).toString()).floatValue();
+
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			this.lock.lock();
+			PlatformMiddleware.msgQueue.add(msg);
+			this.lock.unlock();
+		}
+		else
+		{
+		   // todo - scale non normalized values	
+		}
 	}
 
 	void parseXyzrpy(boolean isNormalized, JSONArray values) {
 		// System.out.print(" parseXyzrpy "); System.out.println( values);
 		if (isNormalized) { // for now, only add if normalised - todo
-			msgFields msg = new msgFields();
+			xyzMsg msg = new xyzMsg();
 			// System.out.println(values);
 			// System.out.println(values.toString());
 			try {
-				msg.x = Float.valueOf(values.get(0).toString()).floatValue();
-				msg.y = Float.valueOf(values.get(1).toString()).floatValue();
-				msg.z = Float.valueOf(values.get(2).toString()).floatValue();
-				msg.roll = Float.valueOf(values.get(3).toString()).floatValue();
-				msg.pitch = Float.valueOf(values.get(4).toString()).floatValue();
-				msg.yaw = Float.valueOf(values.get(5).toString()).floatValue();
+				msg.setX(Float.valueOf(values.get(0).toString()).floatValue());
+				msg.setY(Float.valueOf(values.get(1).toString()).floatValue());
+				msg.setZ( Float.valueOf(values.get(2).toString()).floatValue());
+				msg.setRoll(Float.valueOf(values.get(3).toString()).floatValue());
+				msg.setPitch(Float.valueOf(values.get(4).toString()).floatValue());
+				msg.setYaw(Float.valueOf(values.get(5).toString()).floatValue());
 
 			} catch (Exception e) {
 				// TODO Auto-generated catch block

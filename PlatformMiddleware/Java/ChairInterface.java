@@ -42,9 +42,9 @@ public class ChairInterface {
 	    return outMin + (outMax - outMin) * ((value - inMin) / (inMax - inMin));
     }
 	
-	public void sendXyzrpy( PlatformApi.msgFields msg){
+	public void sendXyzrpy( PlatformApi.xyzMsg msg){
 		   String s = String.format("{\"jsonrpc\":\"2.0\",\"method\":\"xyzrpy\",\"args\":[%f,%f,%f, %f,%f,%f]}\n",
-                   msg.x, msg.y, msg.z, msg.roll,msg.pitch, msg.yaw);
+                   msg.getX(), msg.getY(), msg.getZ(), msg.getRoll(),msg.getPitch(), msg.getYaw());
            System.out.print(s);	
            try {
               toChair.writeUTF(s);
@@ -55,6 +55,21 @@ public class ChairInterface {
    			this.end();
    			this.begin();   			
    		}
+	}
+	
+	public void sendRaw( PlatformApi.msgFields msg){
+		   String s = String.format("{\"jsonrpc\":\"2.0\",\"method\":\"raw\",\"args\":[%f,%f,%f, %f,%f,%f]}\n",
+                msg.v[0], msg.v[1], msg.v[2], msg.v[3], msg.v[4], msg.v[5]);
+        System.out.print(s);	
+        try {
+           toChair.writeUTF(s);
+        }
+        catch (IOException e) {   			
+			//e.printStackTrace();
+			System.out.print("error writing to chair, trying to reconnect");
+			this.end();
+			this.begin();   			
+		}
 	}
 
 }
