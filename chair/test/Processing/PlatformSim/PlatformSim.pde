@@ -28,17 +28,22 @@ boolean isCoaseterRunning = false;
 
 boolean isChair;  // flag indicating chair or servo platform
 boolean isConnected = false;
+boolean echoToSerial = false;
+boolean dumpCSV = false;
 
 void setup()
 {
   size(1024, 600, P3D);
   background(0);
   
-  println(Serial.list());
-  println(" Connecting to -> " + Serial.list()[portIndex]);
-  myPort = new Serial(this,Serial.list()[portIndex], 57600);
-  
-  output = createWriter("capture.csv");  // for csv output
+  if(echoToSerial) {  
+    println(Serial.list());
+    println(" Connecting to -> " + Serial.list()[portIndex]);
+    myPort = new Serial(this,Serial.list()[portIndex], 57600);
+  }
+  if(dumpCSV){
+    output = createWriter("capture.csv");  // for csv output
+  }
   myServer = new Server(this, thisPort);
   
   parser = new ParseMessage();
@@ -127,7 +132,9 @@ void draw() {
       
           String outMsg = String.format("xyzrpy,%f,%f,%f,%f,%f,%f\n", m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
           print(outMsg);
-          myPort.write(outMsg);
+          if(echoToSerial) {
+             myPort.write(outMsg);
+          }
         }       
       }
     } 
@@ -186,8 +193,10 @@ public void Change_Platform(int theValue) {
 
 
 void stop() {
-  output.flush(); // Write the remaining data
-  output.close(); // Finish the file
+  if(dumpCSV) {
+    output.flush(); // Write the remaining data
+    output.close(); // Finish the file
+  }
 } 
 
 
