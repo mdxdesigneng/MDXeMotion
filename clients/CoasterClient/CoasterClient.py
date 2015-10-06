@@ -1,7 +1,7 @@
 # Coaster interface
 __author__ = 'Michael Margolis'
 
-import MdxPlatformItf
+import MdxPlatformItf as platform
 import socket
 from time import sleep
 from struct import *
@@ -41,8 +41,11 @@ def processTelemetryMsg( msg):
            pitch = quat.toPitchFromYUp() / pi
            yaw = quat.toYawFromYUp() / pi
            roll = quat.toRollFromYUp() / pi
-           data = [0,0,msg.gForceZ,roll, pitch, yaw] 
-           MdxPlatformItf.sendXyzrpy('norm', data) 
+           x = platform.normalize(msg.gForceX,1); #second arg is the scale value
+           y = platform.normalize(msg.gForceY,1);
+           z = platform.normalize(msg.gForceZ,1);
+           data = [x,y,z,roll, pitch, yaw] 
+           platform.sendXyzrpy('norm', data) 
         
        if( msg.posX != 0 and msg.posY !=0):   
           print msg.posX, msg.posY, msg.posZ, pitch, yaw, roll
@@ -54,16 +57,17 @@ def createSimpleMessage(requestId, msg):
     return result    
 
     
-MdxPlatformItf.connect('localhost');
+platform.connect('localhost');
+platform.sendEncodedConfig(platform.encodeWashoutConfig(0.996,0.996,0.996,0.996,0.996,0.996))
+
 #test messages
-#MdxPlatformItf.sendXyzrpy( 'norm', [0,0,0,.25,.1,-.1]) 
-#MdxPlatformItf.sendXyzrpy( 'norm', [0,0,0,-.25,.1,.1]) 
+#platform.sendEncodedConfig(platform.encodeGainConfig(1,1,1,0.8,0.7,0.6,1.0))
+
+#platform.sendXyzrpy( 'norm', [0,0,0,.25,.1,-.1]) 
+#platform.sendXyzrpy( 'norm', [0,0,0,-.25,.1,.1]) 
     
-#MdxPlatformItf.encodeRaw( 'real', [1.0,2,3,4,5,6])    
-#MdxPlatformItf.encodeXyzrpy( 'norm', [1,2.0,3,4,5,6])   
- 
-#MdxPlatformItf.sendEncodedConfig(MdxPlatformItf.encodeGainConfig(1,1,1,0.8,0.7,0.6,1.0))
-#MdxPlatformItf.sendEncodedConfig(MdxPlatformItf.encodeWashoutConfig(1,1,0.996,0.996,0.996,0.996))
+#platform.encodeRaw( 'real', [1.0,2,3,4,5,6])    
+#platform.encodeXyzrpy( 'norm', [1,2.0,3,4,5,6])   
    
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
