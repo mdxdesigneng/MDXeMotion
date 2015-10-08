@@ -67,7 +67,7 @@ class Platform {
     baseRadius = scale*def.SCALE_BASE_RADIUS;
     platformRadius = scale*def.SCALE_PLATFORM_RADIUS;
     hornLength = scale*def.SCALE_HORN_LENGTH;
-    legLength = scale*def.SCALE_LEG_LENGTH;
+    //legLength = scale*def.SCALE_LEG_LENGTH;
 
     for (int i=0; i<6; i++) {
       float mx = baseRadius*cos(radians(def.baseAngles[i]));
@@ -76,10 +76,10 @@ class Platform {
     }
 
     for (int i=0; i<6; i++) {
-     float mx = platformRadius*cos(radians(def.platformAngles[i]));
-     float my = platformRadius*sin(radians(def.platformAngles[i]));
-
+      float mx = platformRadius*cos(radians(def.platformAngles[i]));
+      float my = platformRadius*sin(radians(def.platformAngles[i]));
       platformJoint[i] = new PVector(mx, my, 0);
+      
       q[i] = new PVector(0, 0, 0);
       l[i] = new PVector(0, 0, 0);
       A[i] = new PVector(0, 0, 0);
