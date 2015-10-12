@@ -6,24 +6,17 @@ import java.lang.Math;
  */
 
 public class PlatfromTransforms {
-	// REAL ANGLES of attachment points
-	private final float platformAngles[] = { 140, 207, 226, 314, 334, 40 };
-	private final float baseAngles[] = { 147, 154, 266, 274, 26, 33 };
-
-	// REAL MEASUREMENTS
-	private final float SCALE_INITIAL_HEIGHT = 700;
-	private final float SCALE_BASE_RADIUS = 400;
-	private final float SCALE_PLATFORM_RADIUS = 400;
-	private final float SCALE_LEG_LENGTH = 800;
-
 	private PVector translation, rotation, initialHeight;
 	private PVector[] baseJoint, platformJoint, q, l, A;
-	private float baseRadius, platformRadius, legLength;
+	private float baseRadius, platformRadius;
+	private float maxTranslation, maxRotationRadians;
 
 	public PlatfromTransforms() {	
-		//System.out.println(" in transform constructor");
+	}
+
+	public void begin(EffectorInterface.effectorDef def) {
 		translation = new PVector();
-		initialHeight = new PVector(0, 0, SCALE_INITIAL_HEIGHT);
+		initialHeight = new PVector(0, 0, def.initialHeight );
 		rotation = new PVector();
 		baseJoint = new PVector[6];
 		platformJoint = new PVector[6];
@@ -31,25 +24,54 @@ public class PlatfromTransforms {
 		q = new PVector[6];
 		l = new PVector[6];
 		A = new PVector[6];
-		baseRadius = SCALE_BASE_RADIUS;
-		platformRadius = SCALE_PLATFORM_RADIUS;
-		legLength = SCALE_LEG_LENGTH;
-
+		baseRadius = def.baseRadius;
+		platformRadius = def.platformRadius;
+		maxTranslation = def.maxTranslation;
+		maxRotationRadians = (float)Math.toRadians(def.maxRotation);
+		
 		for (int i = 0; i < 6; i++) {
-			float mx = (float) (baseRadius * Math.cos(Math.toRadians(baseAngles[i])));
-			float my = (float) (baseRadius * Math.sin(Math.toRadians(baseAngles[i])));
+			float mx = (float) (baseRadius * Math.cos(Math.toRadians(def.baseAngles[i])));
+			float my = (float) (baseRadius * Math.sin(Math.toRadians(def.baseAngles[i])));
 			baseJoint[i] = new PVector(mx, my, 0);
-			q[i] = new PVector();
-			l[i] = new PVector();
-			A[i] = new PVector();
-			platformJoint[i] = new PVector();
+		}	
+		for (int i=0; i<6; i++) {
+		    float mx = (float)(platformRadius * Math.cos(Math.toRadians(def.platformAngles[i])));
+		    float my = (float)(platformRadius * Math.sin(Math.toRadians(def.platformAngles[i])));
+		    platformJoint[i] = new PVector(mx, my, 0);		
+		    q[i] = new PVector(0,0,0);
+			l[i] = new PVector(0,0,0);
+			A[i] = new PVector(0,0,0);			
 		}
-	}
-
-	public void applyTranslationAndRotation(PVector t, PVector r) {
-		rotation.set(r);
-		translation.set(t);
 		calcQ();
+	}
+	
+	public void showAll() {	
+		System.out.print("rotation="); 	System.out.print(rotation);
+		System.out.print(", translation="); 	System.out.println(translation);
+		/*
+		System.out.print("q= ");
+		for(int i=0; i < 6; i++ ) {
+		  	System.out.print(q[i]);   System.out.print(" ");  
+		}
+		System.out.println(); 
+		*/
+		System.out.print("l= ");
+		for(int i=0; i < 6; i++ ) {
+		  	System.out.print(l[i].mag());   System.out.print(" ");  
+		}
+		System.out.println(); 
+ 
+	}
+	
+	public void applyTranslationAndRotation(PVector t, PVector r) {
+		rotation.set(PVector.mult(r, maxRotationRadians));
+		translation.set(PVector.mult(t,maxTranslation));
+		calcQ();
+		//showAll();
+	}	
+	
+	public float getRawLength(int index) {
+	   return (l[index].mag()) ; 
 	}
 
 	private void calcQ() {		
@@ -69,8 +91,7 @@ public class PlatfromTransforms {
 
 	          // translation
 	          q[i].add(PVector.add(translation, initialHeight));
-	          l[i] = PVector.sub(q[i], baseJoint[i]);
-	          
+	          l[i] = PVector.sub(q[i], baseJoint[i]);	          
 	        }
 	   }
       

@@ -2,20 +2,25 @@ import peasy.*;
 import controlP5.*;
 import processing.net.*;
 
+import java.io.UnsupportedEncodingException;
 import processing.serial.*;
-Serial myPort;     // Create object from Serial class
+import hypermedia.net.*;    // import UDP library
+Serial myPort;               // Create object from Serial class
 public static final short portIndex = 0;  // select the com port
 
 float MAX_TRANSLATION = 30;
 float MAX_ROTATION = PI/6;
+
 
 ControlP5 cp5;
 PeasyCam camera;
 Platform mPlatform;
 ParseMessage parser;
 
-private static final int thisPort =  10003;
-Server myServer;
+private static final int multicastPort =  10005;
+private static final String multicastIP =  "239.255.0.5";
+
+UDP udp;  // the UDP object
 
 float posX=0, posY=0, posZ=0, rotX=0, rotY=0, rotZ=0;
 
@@ -27,7 +32,6 @@ PrintWriter output; // for csv output
 boolean isCoaseterRunning = false;
 
 boolean isChair;  // flag indicating chair or servo platform
-boolean isConnected = false;
 boolean echoToSerial = false;
 boolean dumpCSV = false;
 
@@ -44,7 +48,12 @@ void setup()
   if (dumpCSV) {
     output = createWriter("capture.csv");  // for csv output
   }
-  myServer = new Server(this, thisPort);
+  
+  // create a multicast connection on multicastPort
+  // and join the group at multicastIP address
+  udp = new UDP( this, multicastPort, multicastIP );
+  // wait constantly for incomming data
+  udp.listen( true );
 
   parser = new ParseMessage();
 
@@ -106,19 +115,27 @@ void setup()
   camera.setActive(true);
 }
 
-void draw() { 
-  background(200);
-  // Get the next available client 
-  Client thisClient = myServer.available(); 
-  if (thisClient !=null) {       
-    String msg = thisClient.readStringUntil('\n');       
+/**
+ * This is the program receive handler. To perform any action on datagram 
+ * reception, you need to implement this method in your code. She will be 
+ * automatically called by the UDP object each time he receive a nonnull 
+ * message.
+ */
+void receive( byte[] data ) {
+    String msg=null;
+   try { 
+       msg = new String(data, "UTF-8"); 
+    } catch (UnsupportedEncodingException e) {
+      e.printStackTrace();
+    }
+    
     if (msg != null) {     
       int index =  msg.indexOf("{");
       if ( index >=0) {
          msg = msg.substring(index);       
          println(msg);
         if( parser.isGeometryRequest(msg) ){          
-            geometryReply(thisClient);            
+             ; // todo );            
         } else {              
           msgFields m = parser.parseMsg(msg);
           if ( m != null) {
@@ -133,15 +150,19 @@ void draw() {
             }
 
             String outMsg = String.format("xyzrpy,%f,%f,%f,%f,%f,%f\n", m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
-            print("outmsg:" + outMsg);
+            print(outMsg);
             if (echoToSerial) {
               myPort.write(outMsg);
             }
           }
         }
       }
-    }
-  }
+    } 
+}
+
+void draw() { 
+  background(200); 
+  
 
   if ( chkSliders.getState(0) == true) {
     // use slider if set
@@ -158,52 +179,10 @@ void draw() {
     text(String.format("%.1f", mPlatform.l[i].mag() / mPlatform.scale), 20, 400 + (30*i)); // show lengths
   }
 
-  //if (isConnected && thisClient !=null) {
-  if (isConnected ) {        
-    text("Connected", width-210, height-40);
-  } else {
-    text("Not Connected to Middleware", width-300, height-40);
-  }
 
   cp5.draw();
   camera.endHUD();
   hint(ENABLE_DEPTH_TEST);
-}
-
-void geometryReply(Client c) {
-  JSONObject j = new JSONObject(); 
-  j.setString("jsonrpc","2.0");
-  j.setString("reply","geometry");  
-  j.setFloat("baseRadius", mPlatform.baseRadius);
-  JSONArray baseArray = new JSONArray();
-  for (int i = 0; i < 6; i++) {   
-    baseArray.setFloat(i, ChairPlatformDef.baseAngles[i]);    
-  }  
-  j.setJSONArray("baseAngles", baseArray);
-  j.setFloat("platformRadius", mPlatform.platformRadius);
-  JSONArray platformArray = new JSONArray();
-  for (int i = 0; i < 6; i++) {   
-    platformArray.setFloat(i, ChairPlatformDef.platformAngles[i]);    
-  }  
-  j.setJSONArray("platformAngles", platformArray);
- // j.setFloat("actuatorLen", mPlatform.actuatorLen);
-  j.setFloat("initialHeight", ChairPlatformDef.initialHeight); // todo !!!
-  j.setFloat("maxTranslation", ChairPlatformDef.maxTranslation);
-  j.setFloat("maxRotation", ChairPlatformDef.maxRotation);
-
-  String s = j.format(-1);                
-  c.write(s + "\n") ; 
-  println(s);
-} 
-
-void serverEvent(Server someServer, Client c) {
-  println("We have a new client: " + c.ip());
-  isConnected = true;
-}
-
-void disconnectEvent(Client c) {  
-  println("Client side: a client disconnected: " + c);
-  isConnected = false;
 }
 
 
@@ -216,22 +195,6 @@ public void Change_Platform(int theValue) {
     mPlatform = new Platform(ServoPlatformDef);
 
   mPlatform.applyTranslationAndRotation(new PVector(0, 0, 0), new PVector(0, 0, 0) );  // redraw
-}
-
-
-void stop() {
-  if (dumpCSV) {
-    output.flush(); // Write the remaining data
-    output.close(); // Finish the file
-  }
-} 
-
-
-void controlEvent(ControlEvent theEvent) {
-  camera.setActive(false);
-  /*  
-   //after a UI event send a message?
-   */
 }
 
 void mouseReleased() {

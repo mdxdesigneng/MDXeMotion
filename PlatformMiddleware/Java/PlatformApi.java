@@ -103,6 +103,15 @@ public class PlatformApi extends Thread {
 		washedZAccel=0;
 	}
 	
+	public  xyzMsg createTestMsg( float x,float y, float z) {
+		    xyzMsg msg = new xyzMsg();		
+			
+		    msg.setX(x); 
+		    msg.setY(y); 
+		    msg.setZ(z); 
+		    return msg;		
+	}
+	
 	public static xyzMsg shapeData(xyzMsg msg) {
 	    msg.setX( msg.getX() * cfg.gainX * cfg.gain);
 	    msg.setY( msg.getY() * cfg.gainY * cfg.gain);

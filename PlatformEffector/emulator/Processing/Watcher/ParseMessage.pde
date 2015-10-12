@@ -59,7 +59,7 @@ public class ParseMessage
   {  
     JSONObject json1 = JSONObject.parse(msg);
     //println(json1);
-    if ( json1.getString("method").equals("moveEvent"))
+    if ( json1.getString("method").equals("xyzrpy"))
     {  
       //print(json1);   
       boolean isRealUnits = false;    
@@ -71,7 +71,7 @@ public class ParseMessage
       else
          return null;
 */         
-      JSONArray values = json1.getJSONArray("xyzArgs"); 
+      JSONArray values = json1.getJSONArray("args"); 
       return parseXyzrph(isRealUnits, values) ;
     }   
     return null;
