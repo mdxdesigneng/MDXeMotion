@@ -276,7 +276,8 @@ public class PlatformApi extends Thread {
 			// open server connection for client
 			middlewareServer = new ServerSocket(MIDDLEWARE_PORT);		
 			Socket client = middlewareServer.accept();
-			System.out.print("Connected to " + client.getRemoteSocketAddress().toString());
+			prevMsgTime = System.currentTimeMillis();
+			System.out.println("Connected to client at " + client.getRemoteSocketAddress().toString());
 			BufferedReader inFromClient = new BufferedReader(new InputStreamReader(client.getInputStream()));
 			String msg;			
 			while (true) {
@@ -285,7 +286,7 @@ public class PlatformApi extends Thread {
 						// System.out.println(msg);
 						if(System.currentTimeMillis() - prevMsgTime > INACTIVITY_TIMEOUT) {
 							resetShaping();
-							System.out.println("inactivity timemout on socket readLine");
+							System.out.println("zeroing washouts");
 						}
 						prevMsgTime = System.currentTimeMillis();
 						parseMsg(msg);

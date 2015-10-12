@@ -43,7 +43,7 @@ public class PlatformMiddleware {
 	   else
 	     return false; // terminate 
 	   api.begin();
-	   
+       System.out.println("Waiting for client (restart client if already running)");
 	   return true;
 	}
 	

@@ -59,19 +59,11 @@ public class ParseMessage
   {  
     JSONObject json1 = JSONObject.parse(msg);
     //println(json1);
-    if ( json1.getString("method").equals("xyzrpy"))
+    if ( json1.getString("method").equals("moveEvent"))
     {  
       //print(json1);   
-      boolean isRealUnits = false;    
-/*      
-      if ( json1.getString("units").equals("real"))
-        isRealUnits = true;
-      else if ( json1.getString("units").equals("norm"))
-        isRealUnits = false; 
-      else
-         return null;
-*/         
-      JSONArray values = json1.getJSONArray("args"); 
+      boolean isRealUnits = false;     
+      JSONArray values = json1.getJSONArray("xyzArgs"); 
       return parseXyzrph(isRealUnits, values) ;
     }   
     return null;

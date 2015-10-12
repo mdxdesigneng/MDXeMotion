@@ -20,11 +20,9 @@ ParseMessage parser;
 private static final int multicastPort =  10005;
 private static final String multicastIP =  "239.255.0.5";
 
-UDP udp;  // the UDP object
 
-float posX=0, posY=0, posZ=0, rotX=0, rotY=0, rotZ=0;
+Client thisClient; 
 
-CheckBox chkSliders;
 CheckBox chkInvert;
 Button  btnDef;
 
@@ -35,9 +33,12 @@ boolean isChair;  // flag indicating chair or servo platform
 boolean echoToSerial = false;
 boolean dumpCSV = false;
 
+private static final String  MiddlewareIp = "localhost";
+private static final int watcherPort =  10004;
+
 void setup()
 {
-  size(1024, 600, P3D);
+  size(700, 600, P3D);
   background(0);
 
   if (echoToSerial) {  
@@ -48,13 +49,8 @@ void setup()
   if (dumpCSV) {
     output = createWriter("capture.csv");  // for csv output
   }
-  
-  // create a multicast connection on multicastPort
-  // and join the group at multicastIP address
-  udp = new UDP( this, multicastPort, multicastIP );
-  // wait constantly for incomming data
-  udp.listen( true );
 
+  thisClient = new Client(this, MiddlewareIp, watcherPort);
   parser = new ParseMessage();
 
   smooth();
@@ -69,42 +65,16 @@ void setup()
   mPlatform.applyTranslationAndRotation(new PVector(), new PVector());
 
   cp5 = new ControlP5(this);
-
-  cp5.addSlider("posX")
-    .setPosition(20, 20)
-      .setSize(180, 40).setRange(-1, 1);
-  cp5.addSlider("posY")
-    .setPosition(20, 70)
-      .setSize(180, 40).setRange(-1, 1);
-  cp5.addSlider("posZ")
-    .setPosition(20, 120)
-      .setSize(180, 40).setRange(-1, 1);
-
-  cp5.addSlider("rotX")
-    .setPosition(width-210, 20)
-      .setSize(180, 40).setRange(-1, 1);
-  cp5.addSlider("rotY")
-    .setPosition(width-210, 70)
-      .setSize(180, 40).setRange(-1, 1);
-  cp5.addSlider("rotZ")
-    .setPosition(width-210, 120)
-      .setSize(180, 40).setRange(-1, 1);
-
-  chkSliders = cp5.addCheckBox("UseSliders")
-    .setPosition(100, 200)
-      .setSize(40, 40)
-        .setItemsPerRow(1)       
-          .addItem("Use Sliders", 0)  ;
-
-  chkInvert = cp5.addCheckBox("invert")
-    .setPosition(width-210, 220)
+  
+ chkInvert = cp5.addCheckBox("invert")
+    .setPosition(width-100, height - 80)
       .setSize(40, 40)
         .setItemsPerRow(1)       
           .addItem("Invert", 0)  ;
 
   btnDef = cp5.addButton("Change_Platform")
     .setValue(128)
-      .setPosition(width-210, 190)
+      .setPosition(width-100, height-30)
         .setSize(80, 25)
           .setCaptionLabel("Change Platform") 
             .updateSize()
@@ -115,31 +85,19 @@ void setup()
   camera.setActive(true);
 }
 
-/**
- * This is the program receive handler. To perform any action on datagram 
- * reception, you need to implement this method in your code. She will be 
- * automatically called by the UDP object each time he receive a nonnull 
- * message.
- */
-void receive( byte[] data ) {
-    String msg=null;
-   try { 
-       msg = new String(data, "UTF-8"); 
-    } catch (UnsupportedEncodingException e) {
-      e.printStackTrace();
-    }
-    
-    if (msg != null) {     
+
+void draw() { 
+  background(200); 
+  
+  if (thisClient !=null) {       
+    String msg = thisClient.readStringUntil('\n'); 
+     if (msg != null) {     
       int index =  msg.indexOf("{");
       if ( index >=0) {
          msg = msg.substring(index);       
-         println(msg);
-        if( parser.isGeometryRequest(msg) ){          
-             ; // todo );            
-        } else {              
+         println(msg);                  
           msgFields m = parser.parseMsg(msg);
           if ( m != null) {
-
             if ( chkInvert.getState(0) == true) { 
               mPlatform.applyTranslationAndRotation(PVector.mult(new PVector(m.x, m.y, m.z), MAX_TRANSLATION), 
               PVector.mult(new PVector(m.pitch, m.roll, m.yaw), MAX_ROTATION));
@@ -155,21 +113,10 @@ void receive( byte[] data ) {
               myPort.write(outMsg);
             }
           }
-        }
-      }
-    } 
-}
-
-void draw() { 
-  background(200); 
+       }
+     } 
+  }    
   
-
-  if ( chkSliders.getState(0) == true) {
-    // use slider if set
-    mPlatform.applyTranslationAndRotation(PVector.mult(new PVector(posX, posY, posZ), MAX_TRANSLATION), 
-    PVector.mult(new PVector(rotY, rotX, rotZ), MAX_ROTATION));
-  }
-
   mPlatform.draw();
 
   hint(DISABLE_DEPTH_TEST);
