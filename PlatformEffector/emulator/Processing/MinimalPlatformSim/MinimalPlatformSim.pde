@@ -42,21 +42,19 @@ void draw() {
         if( parser.isGeometryRequest(msg) ){          
             geometryReply(thisClient);            
         } else {              
-          msgFields m = parser.parseMsg(msg);
-          if ( m != null) {
-            mPlatform.applyTranslationAndRotation(PVector.mult(new PVector(m.x, m.y, m.z), MAX_TRANSLATION), 
-              PVector.mult(new PVector(-m.pitch, m.roll, m.yaw), MAX_ROTATION));            
+          float vals[] = parser.parseMsg(msg);
+          if ( vals != null) {
+            
+            for (int i=0; i < 6; i++) {
+                text(String.format("%.1f", vals[i]), 20, 40 + (30*i)); // show lengths 
+            }
+    
           }
         }
       }
     }
   }
-
  
-  mPlatform.draw();
-  for (int i=0; i < 6; i++) {
-    text(String.format("%.1f", mPlatform.l[i].mag() / mPlatform.scale), 20, 40 + (30*i)); // show lengths
-  } 
   if (isConnected ) {        
     text("Connected", width-210, height-40);
   } else {
@@ -68,7 +66,7 @@ void geometryReply(Client c) {
   JSONObject j = new JSONObject(); 
   j.setString("jsonrpc","2.0");
   j.setString("reply","geometry");
-  j.setString("effectorName","PlatformSimulator");    
+  j.setString("effectorName","MinimalSimulator");    
   j.setFloat("baseRadius", mPlatform.baseRadius);
   JSONArray baseArray = new JSONArray();
   for (int i = 0; i < 6; i++) {   

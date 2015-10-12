@@ -44,10 +44,21 @@ public class ParseMessage
       msg.pitch = (float)values.getDouble(4);
       msg.yaw   = (float)values.getDouble(5);
       return msg;     
-     // msgQueue.add(msg);
+     // msgQueue.add(msg);   
+   
     } 
     return null;  
   } 
+  
+  private float [] parseRaw( JSONArray values) 
+  {  
+      float [] msg = new float[6];
+      for(int i=0; i < 6; i++)
+          msg[i] = (float)values.getDouble(0);
+      return msg; 
+      
+  } 
+
 
   public boolean isGeometryRequest(String msg)
   {    
@@ -55,16 +66,14 @@ public class ParseMessage
     return json1.getString("method").equals("geometry") ; 
   }
 
-  public msgFields parseMsg(String msg)  
+  public float [] parseMsg(String msg)  
   {  
-    JSONObject json1 = JSONObject.parse(msg);
-    //println(json1);
+    JSONObject json1 = JSONObject.parse(msg);   
     if ( json1.getString("method").equals("moveEvent"))
     {  
-      //print(json1);   
-      boolean isRealUnits = false;    
-      JSONArray values = json1.getJSONArray("xyzArgs"); 
-      return parseXyzrph(isRealUnits, values) ;
+      //print(json1);     
+      JSONArray values = json1.getJSONArray("rawArgs"); 
+      return parseRaw(values) ;
     }   
     return null;
   } 
