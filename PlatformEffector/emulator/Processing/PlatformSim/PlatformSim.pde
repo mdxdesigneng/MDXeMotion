@@ -173,7 +173,8 @@ void draw() {
 void geometryReply(Client c) {
   JSONObject j = new JSONObject(); 
   j.setString("jsonrpc","2.0");
-  j.setString("reply","geometry");  
+  j.setString("reply","geometry");
+  j.setString("effectorName","PlatformSimulator");    
   j.setFloat("baseRadius", mPlatform.baseRadius);
   JSONArray baseArray = new JSONArray();
   for (int i = 0; i < 6; i++) {   
