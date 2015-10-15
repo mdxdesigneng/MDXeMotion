@@ -54,7 +54,8 @@ public class ParseMessage
   {  
       float [] msg = new float[6];
       for(int i=0; i < 6; i++)
-          msg[i] = (float)values.getDouble(0);
+          msg[i] = (float)values.getDouble(i);
+      println( msg);
       return msg; 
       
   } 

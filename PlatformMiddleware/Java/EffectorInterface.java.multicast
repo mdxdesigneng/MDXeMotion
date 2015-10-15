@@ -1,0 +1,256 @@
+// this version supports connecting to Primary effector as a server, secondary effectors via multicast
+
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
+import java.net.Socket;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+public class EffectorInterface {
+	private InetAddress effectorIP;
+	private int effectorPort;
+	private InetAddress multicastIP;
+	private int multicastPort;
+	
+	
+	Socket effectorClient = null;
+	DataOutputStream toEffector=null;;
+	MulticastSocket  multicastSocket =null;
+		
+	public static abstract class effectorDef {
+		float baseAngles[] ;
+		float baseRadius;         // mm		
+		float platformAngles[] ;
+		float platformRadius;     // mm
+		float actuatorLen[];      // min, max millimetres
+		float initialHeight;      // mm distance between the base and platform when centered
+		float maxTranslation;     // mm
+        float maxRotation;        // angle in degrees
+        public effectorDef() {
+        	baseAngles = new float[6];
+        	platformAngles = new float[6];
+        	actuatorLen = new float[2];        			
+        }
+	}
+	
+	private static class geometry extends effectorDef {		
+		float baseAngles[] = { 140, 207, 226, 314, 334, 40 };
+		float baseRadius= 440; //  mm		
+		float platformAngles[] = { 147, 154, 266, 274, 26, 33 };
+		float platformRadius = 540; // mm
+		float actuatorLen[] = {700,800}; // min, max millimetres
+		float initialHeight = 680; // mm distance between the base and platform when centered
+		float maxTranslation = 40; // mm
+        float maxRotation = 25;     //  angle in degrees
+	}
+	geometry effectorGeometry;	
+ 
+	
+	public effectorDef begin(InetAddress ip, int port,InetAddress ip2, int port2 ) {  // returns false if unable to connect to the Effector socket
+	   effectorIP = ip;
+	   effectorPort = port;
+       multicastIP = ip2;
+	   multicastPort = port2;
+	   if( connectToEffector()) {		   
+		  try  {
+			  multicastSocket  = new MulticastSocket(); // create multicast socket		
+			  multicastSocket.setTimeToLive(1); // only route within subnet
+		  }
+		  catch(IOException ex) {
+			  System.out.println("Unable to open multicast socket for secondary effectors");
+		  }
+		  return effectorGeometry;
+	   }
+	   return null;
+	}
+	
+	public geometry getGeometry() {
+		return effectorGeometry;
+	}
+	
+	private boolean connectToEffector(){
+		try {
+		   effectorClient = new Socket(effectorIP, effectorPort);
+	       toEffector = new DataOutputStream(effectorClient.getOutputStream());
+	      // fromEffector = new DataInputStream( effectorClient.getInputStream()); 
+	       System.out.println("Connected to Effector socket");	
+	       effectorGeometry = new geometry();
+	       if(requestGeometry())
+	          return true;
+	    }		   
+	    catch (IOException e) {
+	       System.out.print(e);
+	       System.out.println("\n Unable to connect to Effector, ensure Effector Server is running and available");		   
+        } 
+	    return false;
+	
+	}
+	
+	
+	public void end() {
+		 try {
+			  if( effectorClient != null)
+			      effectorClient.close();
+	    	} catch (IOException e) {		
+			   e.printStackTrace();
+		    }
+	}
+	
+	public float map(float value, float inMin, float inMax, float outMin, float outMax) {
+	    return outMin + (outMax - outMin) * ((value - inMin) / (inMax - inMin));
+    }
+	
+	void showGeometry()	{
+		  System.out.print("baseRadius="); System.out.println(effectorGeometry.baseRadius);		 
+		  float[] b = effectorGeometry.baseAngles.clone();
+		  System.out.println(String.format("baseAngles=[%f,%f,%f, %f,%f,%f]",b[0],b[1],b[2],b[3],b[4],b[5]));
+		  System.out.print("platformRadius="); System.out.println(effectorGeometry.platformRadius);		
+		  float[] p = effectorGeometry.platformAngles.clone();
+		  System.out.println(String.format("platformAngles=[%f,%f,%f, %f,%f,%f]",p[0],p[1],p[2],p[3],p[4],p[5]));
+		  System.out.print("initialHeight="); System.out.println(effectorGeometry.initialHeight);
+		  System.out.print("maxTranslation="); System.out.println(effectorGeometry.maxTranslation);
+		  System.out.print("maxRotation="); System.out.println(effectorGeometry.maxRotation);
+	
+	}
+
+	void parseGeometry(String msg) {
+		JSONParser parser = new JSONParser();
+		try {
+			Object obj = parser.parse(msg);
+			JSONObject jsonObject = (JSONObject) obj;
+
+			if ((boolean) (jsonObject.get("reply").equals("geometry"))) {
+				// todo - this needs code to handle missing or malformed messages !!!				
+				effectorGeometry.platformRadius = Float.valueOf(jsonObject.get("platformRadius").toString()).floatValue();
+				effectorGeometry.baseRadius = Float.valueOf(jsonObject.get("baseRadius").toString()).floatValue();				
+				JSONArray platformAngles = (JSONArray) jsonObject.get("platformAngles");
+				JSONArray baseAngles = (JSONArray) jsonObject.get("baseAngles");				
+				for(int i=0; i < 6; i++){
+					effectorGeometry.platformAngles[i] = Float.valueOf(platformAngles.get(i).toString()).floatValue();
+					effectorGeometry.baseAngles[i] = Float.valueOf(baseAngles.get(i).toString()).floatValue();
+				}				
+				//JSONArray actuatorLen = (JSONArray) jsonObject.get("actuatorLen");
+				// effectorGeometry.minActuatorLen = Float.valueOf(actuatorLen.get(0).toString()).floatValue();
+				// effectorGeometry.maxActuatorLen = Float.valueOf(actuatorLen.get(1).toString()).floatValue();
+				effectorGeometry.initialHeight = Float.valueOf(jsonObject.get("initialHeight").toString()).floatValue();
+				effectorGeometry.maxTranslation = Float.valueOf(jsonObject.get("maxTranslation").toString()).floatValue();
+				effectorGeometry.maxRotation = Float.valueOf(jsonObject.get("maxRotation").toString()).floatValue();
+			
+			} 
+			else {// its not the reply we want
+				System.out.print("reply does not contain well formed geometry message");	
+			}
+		} catch (ParseException e) {
+			e.printStackTrace();		
+		}
+	}
+
+	
+	private  boolean requestGeometry() {
+		try {			
+			toEffector.writeUTF("{\"jsonrpc\":\"2.0\",\"method\":\"geometry\"}\n");
+		
+			effectorClient.setSoTimeout(5000);  // wait up to 5 seconds for a reply				
+			BufferedReader input =		
+		       new BufferedReader(new InputStreamReader(effectorClient.getInputStream()));
+			String reply =  (String) input.readLine();
+			if(reply != null){
+				parseGeometry(reply);	
+				showGeometry();	
+			}
+			else {
+				System.out.println("timout waiting for a reply to get geometry message");		
+			}
+			
+			
+		} catch (IOException e) {			
+			//e.printStackTrace();
+			System.out.println("error writing to Effector, trying to reconnect");
+			this.end();
+			connectToEffector();
+		}
+		return true;
+	}
+	
+	public void sendMoveEvent(float [] raw, float[] xyz){
+		 String s = "{\"jsonrpc\":\"2.0\",\"method\":\"moveEvent\",";
+	      s = s + String.format("\"rawArgs\":[%f,%f,%f,%f,%f,%f],\"xyzArgs\":[%f,%f,%f,%f,%f,%f],\"extents\":[%f,%f,%f,%f]}\n",
+				 raw[0], raw[1], raw[2], raw[3], raw[4], raw[5], xyz[0], xyz[1], xyz[2], xyz[3], xyz[4], xyz[5],
+				 effectorGeometry.maxTranslation, effectorGeometry.maxRotation,  effectorGeometry.actuatorLen[0], effectorGeometry.actuatorLen[1]  );
+       //  System.out.print(s);	
+         try {
+            toEffector.writeUTF(s);
+         }
+         catch (IOException e) {   			
+ 			//e.printStackTrace();
+ 			System.out.print("error writing to Effector, trying to reconnect");
+ 			this.end();
+ 			connectToEffector();			
+ 		}
+      //Send to multicast IP address and port
+      byte[] outBuf = s.getBytes();
+      DatagramPacket outPacket = new DatagramPacket(outBuf, outBuf.length, multicastIP, multicastPort);
+     
+      if( outPacket != null && multicastSocket != null )
+			try {
+				multicastSocket.send(outPacket);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}   
+ 		
+	}
+	
+	// todo - remove the following if not needed
+	public void sendXyzrpy( PlatformApi.xyzMsg msg){
+		   String s = String.format("{\"jsonrpc\":\"2.0\",\"method\":\"xyzrpy\",\"args\":[%f,%f,%f,%f,%f,%f]}\n",
+                   msg.getX(), msg.getY(), msg.getZ(), msg.getRoll(),msg.getPitch(), msg.getYaw());
+         //  System.out.print(s);	
+           try {
+              toEffector.writeUTF(s);
+           }
+           catch (IOException e) {   			
+   			//e.printStackTrace();
+   			System.out.print("error writing to Effector, trying to reconnect");
+   			this.end();
+   			connectToEffector();			
+   		}
+        //Send to multicast IP address and port
+        byte[] outBuf = s.getBytes();
+        DatagramPacket outPacket = new DatagramPacket(outBuf, outBuf.length, multicastIP, multicastPort);
+       
+        if( outPacket != null && multicastSocket != null )
+			try {
+				multicastSocket.send(outPacket);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}   
+	}
+	
+	public void sendRaw( PlatformApi.msgFields msg){
+		   String s = String.format("{\"jsonrpc\":\"2.0\",\"method\":\"raw\",\"args\":[%f,%f,%f, %f,%f,%f]}\n",
+                msg.v[0], msg.v[1], msg.v[2], msg.v[3], msg.v[4], msg.v[5]);
+        System.out.print(s);	
+        try {
+           toEffector.writeUTF(s);
+        }
+        catch (IOException e) {   			
+			//e.printStackTrace();
+			System.out.print("error writing to Effector, trying to reconnect");
+			this.end();
+			connectToEffector();			
+		}
+	}
+
+}

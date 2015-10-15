@@ -16,8 +16,9 @@ boolean isConnected = false;
 void setup()
 {
   size(600, 400);
-  background(0);
-  textSize(20);
+  background(200);
+  fill(0);  
+  textSize(20);  
   
   myServer = new Server(this, thisPort);
   parser = new ParseMessage();
@@ -28,8 +29,7 @@ void setup()
 }
 
 void draw() { 
-  background(200);
-  fill(0);
+    background(200);
   // Get the next available client 
   Client thisClient = myServer.available(); 
   if (thisClient !=null) {       
@@ -38,7 +38,7 @@ void draw() {
       int index =  msg.indexOf("{");
       if ( index >=0) {
          msg = msg.substring(index);       
-         println(msg);
+        // println(msg);
         if( parser.isGeometryRequest(msg) ){          
             geometryReply(thisClient);            
         } else {              

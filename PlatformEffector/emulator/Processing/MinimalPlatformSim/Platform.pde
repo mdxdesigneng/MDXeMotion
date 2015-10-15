@@ -117,9 +117,5 @@ class Platform {
       l[i] = PVector.sub(q[i], baseJoint[i]);
     }
   }
-
-
-  public void draw() {
-  }
 }
 
