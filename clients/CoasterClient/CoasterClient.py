@@ -9,6 +9,9 @@ import collections
 from quaternion import Quaternion
 from math import pi, degrees
 
+interval = .05  #time in seconds between telemetry requests
+middleware_ip_addr = 'localhost'
+
 coaster_ip_addr = 'localhost'
 coaster_port = 15151
 coaster_buffer_size = 1024
@@ -26,6 +29,7 @@ N_MSG_TELEMETRY = 6
 c_nExtraSizeOffset = 9  # Start of extra size data within message
 
 telemetryMsg = collections.namedtuple('telemetryMsg','state,frame,viewMode,coasterIndex,coasterStyle,train,car,seat,speed,posX,posY,posZ,quatX,quatY,quatZ,quatW,gForceX,gForceY,gForceZ')
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 def processTelemetryMsg( msg):
    # this version only creates a normalized message
@@ -54,25 +58,37 @@ def processTelemetryMsg( msg):
 # see NL2TelemetryClient.java in NL2 distribution for message format
 def createSimpleMessage(requestId, msg):
     result = pack('>cHIHc', 'N',msg,requestId,0,'L')
-    return result    
+    return result   
 
-    
-platform.connect('localhost');
-platform.sendEncodedConfig(platform.encodeWashoutConfig(0.996,0.996,0.996,0.996,0.996,0.996))
+def connectToMiddleware():    
+    while True:
+        try:
+            platform.connect(middleware_ip_addr);
+            print "Coaster client connected to Middleware"
+            break 
+        except socket.error, e:
+            print "unable to connect to middleware, retrying: ", middleware_ip_addr
+ 
+ 
+def connectToCoaster():
+     while True:
+        try:
+           client.connect((coaster_ip_addr, coaster_port))
+           print "Coaster client connected to NL2"
+           break;
+        except socket.error, e:
+           print "unable to connect to NL2, retrying: ", coaster_ip_addr
 
-#test messages
-#platform.sendEncodedConfig(platform.encodeGainConfig(1,1,1,0.8,0.7,0.6,1.0))
 
-#platform.sendXyzrpy( 'norm', [0,0,0,.25,.1,-.1]) 
-#platform.sendXyzrpy( 'norm', [0,0,0,-.25,.1,.1]) 
-    
-#platform.encodeRaw( 'real', [1.0,2,3,4,5,6])    
-#platform.encodeXyzrpy( 'norm', [1,2.0,3,4,5,6])   
-   
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-client.connect((coaster_ip_addr, coaster_port))
-client.send(createSimpleMessage(id, N_MSG_GET_VERSION))
+connectToCoaster()           
+client.send(createSimpleMessage(id, N_MSG_GET_VERSION)) 
+connectToMiddleware() 
+while True:
+    try:
+        platform.sendEncodedConfig(platform.encodeWashoutConfig(0.996,0.996,0.996,0.996,0.996,0.996))
+        break 
+    except socket.error, e:
+        print "unable to send config, retrying: ", middleware_ip_addr
 
 while True:   
     #coastercClient, address = server.accept() 
@@ -92,7 +108,7 @@ while True:
                 processTelemetryMsg(tm)                    
             else:
                 print 'invalid msg len expected 76, got ', size
-            sleep(0.02)
+            sleep(interval)
             client.send(createSimpleMessage(id, N_MSG_GET_TELEMETRY))
         else:
             print 'unhandled message', msg

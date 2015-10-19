@@ -244,7 +244,10 @@ public class PlatformApi extends Thread {
 		// todo - needs robust error handling for missing keys and values
 		JSONParser parser = new JSONParser();
 		try {
+			if(msg.length() > 0){
 			Object obj = parser.parse(msg);
+				if(obj != null){
+					
 			JSONObject jsonObject = (JSONObject) obj;
 
 			if ((boolean) (jsonObject.get("method").equals("config"))) {
@@ -266,6 +269,8 @@ public class PlatformApi extends Thread {
 				else if ((boolean) (jsonObject.get("method").equals("xyzrpy")))
 					parseXyzrpy(isNormalized, values);
 			}
+				}
+			}
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
@@ -277,7 +282,7 @@ public class PlatformApi extends Thread {
 			middlewareServer = new ServerSocket(MIDDLEWARE_PORT);		
 			Socket client = middlewareServer.accept();
 			prevMsgTime = System.currentTimeMillis();
-			System.out.println("Connected to client at " + client.getRemoteSocketAddress().toString());
+			System.out.println("Middleware connected to client at " + client.getRemoteSocketAddress().toString());
 			BufferedReader inFromClient = new BufferedReader(new InputStreamReader(client.getInputStream()));
 			String msg;			
 			while (true) {
@@ -292,7 +297,7 @@ public class PlatformApi extends Thread {
 						parseMsg(msg);
 					}
 					else {						
-						System.out.println("Client Disconnected, waiting for new connection");
+						System.out.println("Middleware client Disconnected, waiting for new connection");
 						client = middlewareServer.accept();
 						System.out.print("Connected to " + client.getRemoteSocketAddress().toString());
 						inFromClient = new BufferedReader(new InputStreamReader(client.getInputStream()));

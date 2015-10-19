@@ -13,7 +13,7 @@ platformSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # connect to platform middleware
 def connect(ip):
     platformSock.connect((ip, platform_port))
-    print "connecting to:", ip    
+    #print "Coaster client connecting to middleware at:", ip    
     
 def disconnect():
     print "disconnected"

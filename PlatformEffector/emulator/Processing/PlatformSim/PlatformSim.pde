@@ -28,7 +28,7 @@ boolean isCoaseterRunning = false;
 
 boolean isChair;  // flag indicating chair or servo platform
 boolean isConnected = false;
-boolean echoToSerial = false;
+boolean echoToSerial = true;
 boolean dumpCSV = false;
 
 void setup()
@@ -129,10 +129,12 @@ void draw() {
               println("check invert");
             } else {
               mPlatform.applyTranslationAndRotation(PVector.mult(new PVector(m.x, m.y, m.z), MAX_TRANSLATION), 
-              PVector.mult(new PVector(-m.pitch, m.roll, m.yaw), MAX_ROTATION));
+              PVector.mult(new PVector(-m.pitch, m.roll, -m.yaw), MAX_ROTATION));
             }
 
-            String outMsg = String.format("xyzrpy,%f,%f,%f,%f,%f,%f\n", m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
+            //String outMsg = String.format("xyzrpy,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n", m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
+            String outMsg = String.format("rawArgs,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f\n", mPlatform.l[0].mag()/mPlatform.scale, mPlatform.l[1].mag()/mPlatform.scale,
+                                          mPlatform.l[2].mag()/mPlatform.scale,mPlatform.l[3].mag()/mPlatform.scale,mPlatform.l[4].mag()/mPlatform.scale, mPlatform.l[5].mag()/mPlatform.scale);       
             print("outmsg:" + outMsg);
             if (echoToSerial) {
               myPort.write(outMsg);

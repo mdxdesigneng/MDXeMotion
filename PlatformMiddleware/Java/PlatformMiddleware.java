@@ -37,11 +37,18 @@ public class PlatformMiddleware {
 	 
 	private boolean begin(InetAddress ip, int port, int watcherPort){
 	   // Connect to effector (and watchers) on the given ports...
+       // this now loops until it can connect to chair (so never returns false)
+       while(true) { 	
 	   EffectorInterface.effectorDef def = effectorItf.begin(ip, port, watcherPort);
-	   if(def != null)		  
+          if(def != null) {        
 	      transform.begin(def);
-	   else
-	     return false; // terminate 
+             break;
+          }
+          else {        	  
+        	  System.out.println(String.format("Unable to connect to effector at: %s, retrying... (is the server running?)", ip.getHostAddress()));
+        	   
+           }     
+          }
 	   api.begin();
        System.out.println("Waiting for client (restart client if already running)");
 	   return true;
