@@ -7,9 +7,11 @@ import subprocess
 # otherwise, wait until chair server is running
 #os.startfile("C:/Program Files/NoLimits 2/64bit/nolimits2app.exe --telemetry")
 #os.startfile(os.path.normpath("C:/Program Files/NoLimits 2/64bit/nolimits2app.exe"))
-effector = os.path.normpath("PlatformSim.exe")
+
+#effector = os.path.normpath("PlatformSim.exe")
+effector = os.path.normpath("PlatformEffector/chairServer\chairServer.py")
 print "starting chair server:", effector
-#####os.startfile(effector)
+os.startfile(effector)
 #####time.sleep(6)
 
 middleware = "java -jar PlatformMiddleware/Java/export/middleware.jar"

@@ -135,17 +135,17 @@ public class PlatformApi extends Thread {
 
 	float getOptionalField(JSONObject jsonObj, String field, float val) {
       try{
-		System.out.print(field);
+		//System.out.print(field);
 		String s = jsonObj.get(field).toString();
 		
 		if (s != null) {
-			System.out.format(" %s ", s);
+			//System.out.format(" %s ", s);
 			val = Float.valueOf(s).floatValue();
-			System.out.println(val);
+			//System.out.println(val);
 		}
       }
       catch(Exception e ){
-    	  System.out.println(e.toString());
+    	  // use default if any error
       }
 	 return val;
 	}
@@ -205,7 +205,7 @@ public class PlatformApi extends Thread {
 	}
 
 	void parseConfig(JSONObject json1) {
-		 System.out.println(values.toString());
+		//System.out.println(json1.toString());
 
 		cfg.gainX = getOptionalField(json1, "gainX", cfg.gainX);
 		cfg.gainY = getOptionalField(json1, "gainY", cfg.gainY);
@@ -252,7 +252,7 @@ public class PlatformApi extends Thread {
 
 			if ((boolean) (jsonObject.get("method").equals("config"))) {
 				parseConfig(jsonObject);
-				printConfig();
+						//printConfig();
 			} else // its a movement message?, parse fields
 			{
 				// print(json1);

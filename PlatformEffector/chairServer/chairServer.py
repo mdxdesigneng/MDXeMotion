@@ -49,14 +49,15 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
     def handle(self):   
         while True:     
             try:         
-                json_str = self.rfile.readline().strip()           
+                json_str = self.rfile.readline().strip()[2:]
                 if json_str != None:                          
                     print json_str
                     #print "{} wrote:".format(self.client_address[0])       
                     try:                 
                         j = json.loads(json_str)                
+                        # print "got:", j                          
                         if j['method'] == 'moveEvent':  
-                           print "received a moveEvent query, parsing and sending to FST"
+                           #print "received a moveEvent query, parsing and sending to FST"
                            #optional reply on move receive
                            #conn.send("moving to moveEvent data")
                            #compulsory forward of data

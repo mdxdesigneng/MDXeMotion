@@ -28,6 +28,7 @@ except socket.error, e:
 geometryMsg = json.dumps(OrderedDict([("jsonrpc","2.0"),("method","geometry")]), separators=(',',':')) + '\n' 
 ##'{"jsonrpc":"2.0","method":"geometry"}\n'
 chair.send(geometryMsg)
+sleep(2)
 
 fields = [centerVal, centerVal, centerVal, centerVal, centerVal, centerVal]  # platform centered on all axis
 dirs = [1,1,1,1,1,1] #  1 increments values, -1 decrements

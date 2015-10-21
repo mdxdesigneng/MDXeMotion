@@ -63,7 +63,7 @@ public class EffectorInterface {
 		   effectorClient = new Socket(effectorIP, effectorPort);
 	       toEffector = new DataOutputStream(effectorClient.getOutputStream());
 	      // fromEffector = new DataInputStream( effectorClient.getInputStream()); 
-	       System.out.println("Connected to Effector socket");	
+	       System.out.println("Middleware connected to Effector socket");	
 	       effectorGeometry = new effectorDef();
 	       if(requestGeometry())
 	          return true;
@@ -160,7 +160,7 @@ public class EffectorInterface {
 			  connectToEffector(); 
 	         }
 		catch (IOException e) {			
-			 System.out.println("error requesting geometry from Effector");	
+			 System.out.println("error requesting geometry from Effector:" + e.toString() );	
 		}
 		return true;
 	}
@@ -168,9 +168,17 @@ public class EffectorInterface {
 	public void sendMoveEvent(float [] raw, float[] xyz){
 		 boolean isWriteSuccessful = false; 
 		 String s = "{\"jsonrpc\":\"2.0\",\"method\":\"moveEvent\",";
+		 /*
+		  * this code sends values as floating point
 	      s = s + String.format("\"rawArgs\":[%f,%f,%f,%f,%f,%f],\"xyzArgs\":[%f,%f,%f,%f,%f,%f],\"extents\":[%f,%f,%f,%f]}\n",
 				 raw[0], raw[1], raw[2], raw[3], raw[4], raw[5], xyz[0], xyz[1], xyz[2], xyz[3], xyz[4], xyz[5],
 				 effectorGeometry.maxTranslation, effectorGeometry.maxRotation,  effectorGeometry.actuatorLen[0], effectorGeometry.actuatorLen[1]  );
+	      */
+		  // this sends raw values and extents as ints
+	      s = s + String.format("\"rawArgs\":[%.0f,%.0f,%.0f,%.0f,%.0f,%.0f],\"xyzArgs\":[%.3f,%.3f,%.3f,%.3f,%.3f,%.3f],\"extents\":[%.0f,%.0f,%.0f,%.0f]}\n",
+				 raw[0], raw[1], raw[2], raw[3], raw[4], raw[5], xyz[0], xyz[1], xyz[2], xyz[3], xyz[4], xyz[5],
+				 effectorGeometry.maxTranslation, effectorGeometry.maxRotation,  effectorGeometry.actuatorLen[0], effectorGeometry.actuatorLen[1]  );
+		 
        //  System.out.print(s);	
          try {
             toEffector.writeUTF(s);
@@ -182,6 +190,7 @@ public class EffectorInterface {
          }
          catch (IOException e) {   			
             System.out.print("error writing moveEvent to Effector, trying to reconnect");
+            System.out.println(e);
  				
  		}
         announcer.announce(s); // Send to announce clients

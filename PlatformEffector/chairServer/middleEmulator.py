@@ -6,7 +6,7 @@ s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
 # Connect as client to a selected server
 # on a specified port
-s.connect(("127.0.0.1",2020))
+s.connect(("127.0.0.1",10003))
 
 # Protocol exchange - sends and receives
 
