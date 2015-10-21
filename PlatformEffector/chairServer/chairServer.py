@@ -1,24 +1,9 @@
-# Let's setup the TCP server
+# Chair Server
+
 import socket
 import json
-
-
-port = 10003
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-print socket.gethostname() 
-s.bind(('', port))
-s.listen(1)
-
-# Let's setup the UDP Socket  
-FST_ip = '127.0.0.1'
-FST_port = 10007 #TODO - change this back to correct festo port
-FSTs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-# Instead of listening for connections, we'll connect to the server.
-
-print "Chair server is running on port", port
-print "Chair server is running on hostname", socket.gethostname()
-
-
+import SocketServer
+import sys
 
 
 _in =[790 ,785 ,775 ,757 ,733 ,713 ,697 ,686 ,676 ,668 ,666 ]
@@ -45,55 +30,66 @@ def multiMap(val, _in, _out, size):
 
 
 def convertToPressure(muscleLength):
-	musclePressure = multiMap(muscleLength,_in,_out,11)
-	return musclePressure
+    musclePressure = multiMap(muscleLength,_in,_out,11)
+    return musclePressure
 
 
+def FST_send(lengths):
+    # todo - add exception handling for potential conversion and socket errors
+    command = ""
+    for idx, len in enumerate(lengths) :
+        muscle = convertToPressure(len)
+        command += "maw"+str(64+idx)+"="+str(muscle)+"\r\n"
+    print command 
+    FSTs.sendto(command,(FST_ip, FST_port))
 
-def FST_send(moveEventJson):
-	parsed_json = json.loads(data)
-	rawArgs = parsed_json['rawArgs']
-	command = ""
-	for idx,muscle in enumerate(rawArgs):
-		muscle = convertToPressure(muscle)
-		command += "maw"+str(64+idx)+"="+str(muscle)+"\r\n"
-	print command 
-	FSTs.sendto(command,(FST_ip, FST_port))
+    
+class MyTCPHandler(SocketServer.StreamRequestHandler):
+        
+    def handle(self):   
+        while True:     
+            try:         
+                json_str = self.rfile.readline().strip()           
+                if json_str != None:                          
+                    print json_str
+                    #print "{} wrote:".format(self.client_address[0])       
+                    try:                 
+                        j = json.loads(json_str)                
+                        if j['method'] == 'moveEvent':  
+                           print "received a moveEvent query, parsing and sending to FST"
+                           #optional reply on move receive
+                           #conn.send("moving to moveEvent data")
+                           #compulsory forward of data
+                           lengths = j['rawArgs']                  
+                           FST_send(lengths)
+                           print "Sent to FST"            
+                        elif j['method'] == 'geometry':
+                           self.sendGeometry()
+                    except ValueError:
+                        print "nothing decoded"
+            except : 
+                  print "Connection from middleware broken, restart middleware"
+                  break;   
+                
+        
+    def sendGeometry(self):
+       #todo add exception handling for send 
+       g = '{"jsonrpc":"2.0","reply":"geometry","effectorName":"Chairserver","baseRadius":176,"platformRadius":216,"initialHeight":680,"maxTranslation":40,"maxRotation":25,"platformAngles":[147,154,266,274,26,33],"baseAngles":[140,207,226,314,334,40]}\n'
+       print "sending geometry", g
+       self.wfile.write(g)    
+            
+if __name__ == "__main__":
+    # setup the UDP Socket  
+    FST_ip = '127.0.0.1'
+    FST_port = 10007 #TODO - change this back to correct festo port
+    print "Chair server opening festo socket on ", FST_port
+    FSTs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+    # start the server
+    HOST, PORT = '', 10003
 
-
-while 1: 
-	conn, addr = s.accept() 
-	try:
-		data = conn.recv(1024)
-		data = data.decode('utf-8')
-
-		# display client connection information
-		data = data.strip()
-		print "ChairServer recieved:", data
-
-
-		parsed_json = json.loads(data)
-		if parsed_json['method'] == "moveEvent":
-			print "revieved a moveEvent query, parsing and sending to FST"
-			#optional reply on move recieve
-			#conn.send("moving to moveEvent data")
-			#compulsary forward of data
-			FST_send(data)
-			print "Sent to FST"
-		
-		if parsed_json['method'] == "geometry":
-			print "revieved a geometry query"
-			#send geom data
-			conn.send('{"jsonrpc":"2.0", "reply":"geometry", "effectorName":Platform Sim", "baseRadius":400, baseAngles":[140, 207, 226, 314, 334, 40]}')
-			print "replied with a geometry message"
-
-
-	except KeyboardInterrupt:
-		#close TCP/UDP sessions
-		conn.close()
-		FSTs.close()
-
-
-
-
+    # Create the server, binding to localhost on port effector port
+    server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)
+    print "Chair server ready to receive on port ",PORT   
+    server.serve_forever()
+    
