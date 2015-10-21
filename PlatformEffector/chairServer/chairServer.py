@@ -3,7 +3,7 @@ import socket
 import json
 
 
-port = 2020
+port = 10003
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print socket.gethostname() 
 s.bind(('', port))
@@ -11,7 +11,7 @@ s.listen(1)
 
 # Let's setup the UDP Socket  
 FST_ip = '127.0.0.1'
-FST_port = 5005
+FST_port = 10007 #TODO - change this back to correct festo port
 FSTs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # Instead of listening for connections, we'll connect to the server.
 
