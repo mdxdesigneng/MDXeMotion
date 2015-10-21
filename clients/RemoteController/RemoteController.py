@@ -34,13 +34,13 @@ def pollSerial():
         
 class RemoteController:
     def __init__(self, master):
-        self.actions = { 'pause' : self.pause, 'dispatch' : self.dispatch,  'reset' : self.reset} 
+        self.actions = { 'pause' : self.pause, 'dispatch' : self.dispatch,  'reset' : self.reset, 'emergencyStop' : self.emergencyStop} 
         
         frame = Frame(master)
         frame.pack()       
              
         self.master = master
-        master.title("NL2 Controller")
+        self.master.title("NL2 Controller")
 
         self.label = Label(master, text="No Limits Remote Controller")
         self.label.pack()
@@ -54,10 +54,14 @@ class RemoteController:
         self.reset_button = Button(master, text="Reset", command=self.reset)
         self.reset_button.pack(side = LEFT,padx=(8,4))          
         
+        self.reset_button = Button(master, text="EmergencyStop", command=self.emergencyStop)
+        self.reset_button.pack(side = LEFT,padx=(8,4))   
+        
         self.close_button = Button(master, text="Close", command=self.quit)
         self.close_button.pack(side = BOTTOM, padx=8)
         
         self.connect()
+        self.isPaused = False
      
     def doAction(self,msg): 
          action = self.actions[msg]
@@ -68,6 +72,8 @@ class RemoteController:
             
            
     def dispatch(self):
+        if self.isPaused:
+            self.pause() # turn pause off before dispatch
         msg = '{"action":"dispatch"}\n'        
         sock1.sendall(msg)   
         print("Dispatch")
@@ -75,12 +81,30 @@ class RemoteController:
     def pause(self):
         msg = '{"action":"pause"}\n'        
         sock1.sendall(msg)   
+        if self.isPaused: 
+            self.isPaused = False            
+            print("Pause off")
+        else:           
+            self.isPaused = True            
         print("Pause")
         
     def reset(self):
+        if self.isPaused:
+            self.pause() # turn pause off before reset
         msg = '{"action":"reset"}\n'        
         sock1.sendall(msg)   
         print("Reset") 
+        
+    def emergencyStop(self):
+        if self.isPaused:
+            print "Already paused"
+        else:
+            self.pause()
+            '''
+            msg = '{"action":"emergencyStop"}\n'
+            sock1.sendall(msg)   
+            print("Emergency Stop")
+            '''            
         
     def connect(self):
        try: 
@@ -102,7 +126,7 @@ class RemoteController:
                sock2.close()                  
        except socket.error, e:
            print 'error closing socket ' , e 
-       master.quit 
+       self.master.quit 
     
     
 
