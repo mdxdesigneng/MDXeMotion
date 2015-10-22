@@ -14,9 +14,11 @@ sock1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 ip1 = 'localhost'
 ip2 = '' #'192.168.1.21'
-remote_port = 10006
+remote_port = 10007
 buffer_size = 64   
    
+states = { "ready" : 0, "running" : 1,  "paused" : 2, "stopped" : 3} 
+  
 def pollSerial():
        
     while True:   
@@ -30,11 +32,14 @@ def pollSerial():
               serBuffer = ''
       elif c >= ' ': # ignore controle chars
         serBuffer += c
+    state = states[controller.getState()]
+    ser.write(state) 
     root.after(20, pollSerial) 
         
 class RemoteController:
     def __init__(self, master):
         self.actions = { 'pause' : self.pause, 'dispatch' : self.dispatch,  'reset' : self.reset, 'emergencyStop' : self.emergencyStop} 
+        self.state = 'ready'
         
         frame = Frame(master)
         frame.pack()       
@@ -63,6 +68,9 @@ class RemoteController:
         self.connect()
         self.isPaused = False
      
+    def getState(self):  
+        return self.state
+        
     def doAction(self,msg): 
          action = self.actions[msg]
          if action:
@@ -74,25 +82,26 @@ class RemoteController:
     def dispatch(self):
         if self.isPaused:
             self.pause() # turn pause off before dispatch
-        msg = '{"action":"dispatch"}\n'        
-        sock1.sendall(msg)   
+        self.state = 'running'
+        self.sendMsg('{"action":"dispatch"',self.state)           
         print("Dispatch")
     
     def pause(self):
-        msg = '{"action":"pause"}\n'        
-        sock1.sendall(msg)   
         if self.isPaused: 
             self.isPaused = False            
             print("Pause off")
+            self.state = 'running'
         else:           
             self.isPaused = True            
         print("Pause")
+            self.state = 'paused'
+        self.sendMsg('{"action":"pause"', self.state)                     
         
     def reset(self):
         if self.isPaused:
             self.pause() # turn pause off before reset
-        msg = '{"action":"reset"}\n'        
-        sock1.sendall(msg)   
+        self.state = 'ready'
+        self.sendMsg('{"action":"reset"',self.state)
         print("Reset") 
         
     def emergencyStop(self):
@@ -100,11 +109,15 @@ class RemoteController:
             print "Already paused"
         else:
             self.pause()
-            '''
-            msg = '{"action":"emergencyStop"}\n'
-            sock1.sendall(msg)   
+            self.state = 'stopped'
+            self.sendMsg('{"action":"emergencyStop"',self.state)
+           # msg = '{"action":"emergencyStop","state":self.state}\n'
+            #sock1.sendall(msg)   
             print("Emergency Stop")
-            '''            
+    
+    def sendMsg(self, buttonStr, state):        
+         msg = buttonStr + ',"state":"' + state +'"}\n' 
+         sock1.sendall(msg)             
         
     def connect(self):
        try: 
