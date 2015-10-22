@@ -1,6 +1,19 @@
-Platform Middleware
-Java code to receive Platform API requests and forward to Chair Server
+Platform Middleware (a component of the Middlesex 6DOF platform)
 
-Parsing uses Json-simple : [https://json-simple.googlecode.com/files/json-simple-1.1.1.jar](https://json-simple.googlecode.com/files/json-simple-1.1.1.jar)
+This module receives API positional commands that are processed for sending to a stewart platform such as the Middlesex Chair
 
-The current version is prototype code and does not calculate raw muscle values.
+The middleware consists of the following elements:
+   PlatformMiddleware.java - initializes and finalized all other modules. Dispatches incoming commands from PlatformAPI
+   to the PlatformTransform module and sends the transformed output data to the effectorInterface.   
+
+   PlatformApi.java - receives json positional commands and optional commands to configure gain and washout.
+   
+   PlatformTransform.java - converts between rotation/translation requests and raw actuator distances
+   
+   EffectorInterface.jave - forms json output messages sent to the platform 
+   
+   SingleWatcher.java - thread run in the effectorInterface class to support passive listeners to the output data
+   
+  
+
+
