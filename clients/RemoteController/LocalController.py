@@ -73,7 +73,7 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
 
 
 if __name__ == "__main__":
-    HOST, PORT = '', 10006
+    HOST, PORT = '', 10007
 
     # Create the server, binding to localhost on port effector port
     server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)

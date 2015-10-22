@@ -10,8 +10,6 @@ baudRate = 9600
 ser = Serial(serialPort , baudRate, timeout=0, writeTimeout=0) 
 serBuffer = ""
 
-sock1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 ip1 = 'localhost'
 ip2 = '' #'192.168.1.21'
 remote_port = 10007
@@ -33,11 +31,14 @@ def pollSerial():
       elif c >= ' ': # ignore controle chars
         serBuffer += c
     state = states[controller.getState()]
-    ser.write(state) 
+    ser.write(state)   
     root.after(20, pollSerial) 
         
 class RemoteController:
     def __init__(self, master):
+        self.sock1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        
         self.actions = { 'pause' : self.pause, 'dispatch' : self.dispatch,  'reset' : self.reset, 'emergencyStop' : self.emergencyStop} 
         self.state = 'ready'
         
@@ -93,7 +94,7 @@ class RemoteController:
             self.state = 'running'
         else:           
             self.isPaused = True            
-        print("Pause")
+            print("Pause")
             self.state = 'paused'
         self.sendMsg('{"action":"pause"', self.state)                     
         
@@ -117,26 +118,33 @@ class RemoteController:
     
     def sendMsg(self, buttonStr, state):        
          msg = buttonStr + ',"state":"' + state +'"}\n' 
-         sock1.sendall(msg)             
+         if self.sock1:           
+            self.sock1.sendall(msg)             
+         if self.sock2:          
+            self.sock2.sendall(msg)          
         
     def connect(self):
        try: 
            if len(ip1) > 0: 
-               sock1.connect((ip1, remote_port))  
+               self.sock1.connect((ip1, remote_port))  
                print('Remote controller connected to ' + ip1)  
+           else:
+               self.sock1 = None
            if len(ip2) > 0: 
-               sock2.connect((ip2, remote_port))  
-               print('Remote controller connected to ' + ip2)                
+               self.sock2.connect((ip2, remote_port))  
+               print('Remote controller connected to ' + ip2)
+           else:
+               self.sock2 = None               
        except socket.error, e:
-           print 'Could not connect to server %s' % ip1 
+           print 'Could not connect to server %s' % ip1, e 
        time.sleep(2.0)    
     
     def quit(self):
        try: 
-           if sock1: 
-               sock1.close()       
-           if sock2: 
-               sock2.close()                  
+           if self.sock1:    
+               self.sock1.close()       
+           if self.sock2:              
+               self.sock2.close()                  
        except socket.error, e:
            print 'error closing socket ' , e 
        self.master.quit 

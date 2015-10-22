@@ -1,4 +1,4 @@
- int firstOutPin = 6; // indicators connected to pins starting from here
+ int firstOutPin = 4; // indicators connected to pins starting from here
  int nbrOutpins = 3; // number of indicators
 
 void setup() {
@@ -45,4 +45,3 @@ void waitRelease( int pin) {
   while(digitalRead(pin) == LOW )
      ;
 }
-
