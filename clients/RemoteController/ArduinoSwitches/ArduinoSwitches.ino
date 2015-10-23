@@ -1,47 +1,63 @@
- int firstOutPin = 4; // indicators connected to pins starting from here
- int nbrOutpins = 3; // number of indicators
+/* 
+ * ArduinoSwitches.ino 
+ * sends switch presses to RemoteControl.py
+   switches connected to pins 9 through 12
+ * displays received state info
+ * States are: ready, running, paused, emergency stop
+ * LED indicators connecteed to pins 4 through 7
+ */
 
+#include <Bounce.h>
+
+const byte debounceT = 10; // max bounce duration in milliseconds
+
+ int firstOutPin = 4; // indicators connected to pins starting from here
+ int nbrOutpins = 4; // number of indicators
+
+ Bounce stopBtn     = Bounce( 9, debounceT); 
+ Bounce dispatchBtn = Bounce(10, debounceT);  
+ Bounce pauseBtn    = Bounce(11, debounceT);  
+ Bounce resetBtn    = Bounce(12, debounceT); 
+  
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(57600);
   for(int i = 0; i <nbrOutpins; i++ ) {
       pinMode(i+firstOutPin, OUTPUT); 
   }
   for(int i=9; i < 13; i++) {
     pinMode(i, INPUT_PULLUP);
   }
+  pinMode(13, OUTPUT); // onboard LED indicates activity (only needed for debug)
 }
 
 void loop() {       
-  if(digitalRead(9) == LOW) {
-       send("emergencyStop");
-       waitRelease(10);
+  if(stopBtn.update() && stopBtn.fallingEdge()) {
+       send("emergencyStop");      
    }
-   if(digitalRead(10) == LOW) {
-       send("dispatch");
-       waitRelease(10);
+   else if(dispatchBtn.update() && dispatchBtn.fallingEdge()) {
+       send("dispatch");      
    }
-   else if(digitalRead(11) == LOW) {
-       send("pause");
-       waitRelease(11);
+   else if(pauseBtn.update() && pauseBtn.fallingEdge()) {
+       send("pause");      
    }
-   if(digitalRead(12) == LOW) {
-       send("reset");
-       waitRelease(12);
+   else if(resetBtn.update() && resetBtn.fallingEdge()) {
+       send("reset");      
    }
    if(Serial.available()) {
-      byte c = Serial.read();
+      digitalWrite(13, HIGH);  // faint light on LED if receiving status updates
+      byte c = Serial.read() - '0';
+      digitalWrite(13, LOW);
       for(int i = 0; i <nbrOutpins; i++ ) {
-        digitalWrite(i+firstOutPin, bitRead(c, i)); 
+          digitalWrite(i+firstOutPin, i == c);     
       }      
    }    
 }
 
 void send( char *msg) {
+   digitalWrite(13, HIGH);
    Serial.println(msg);
+   delay(10);  // short delay to flash LED showing button press has been sent
+   digitalWrite(13, LOW);
 }
 
-void waitRelease( int pin) {
-  delay(20); // crude debounce
-  while(digitalRead(pin) == LOW )
-     ;
-}
+

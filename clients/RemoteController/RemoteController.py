@@ -31,7 +31,7 @@ def pollSerial():
       elif c >= ' ': # ignore controle chars
         serBuffer += c
     state = states[controller.getState()]
-    ser.write(state)   
+    ser.write(state)     
     root.after(20, pollSerial) 
         
 class RemoteController:
@@ -99,8 +99,8 @@ class RemoteController:
         self.sendMsg('{"action":"pause"', self.state)                     
         
     def reset(self):
-        if self.isPaused:
-            self.pause() # turn pause off before reset
+        if self.isPaused:           
+            self.pause() # turn pause off before reset           
         self.state = 'ready'
         self.sendMsg('{"action":"reset"',self.state)
         print("Reset") 
