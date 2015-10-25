@@ -1,12 +1,16 @@
 # Chair Server
+# Input messages are normalized values for the 6 muscles
+# this is converted into percent of muscle length
+#     0% = 666mm, 100% = 790mm
+# a table is interpolated to convert the percent in to pressure out  
 
 import socket
 import json
 import SocketServer
 import sys
 
-
-_in =[790 ,785 ,775 ,757 ,733 ,713 ,697 ,686 ,676 ,668 ,666 ]
+# len:790mm                                  666mm  
+_in =[100 ,90 ,80 ,70 ,60 ,50 ,40 ,30 ,20 ,10 ,0 ]
 _out=[400   ,500 ,1000,1500,2000,2500,3000,3500,4000,4500,5000]
 
 def multiMap(val, _in, _out, size):
@@ -29,19 +33,19 @@ def multiMap(val, _in, _out, size):
 
 
 
-def convertToPressure(muscleLength):
-    musclePressure = multiMap(muscleLength,_in,_out,11)
+def convertToPressure(percent):
+    musclePressure = multiMap(percent,_in,_out,11)
     return musclePressure
 
 
-def FST_send(lengths):
+def FST_send(percents):
     # todo - add exception handling for potential conversion and socket errors
     command = ""
-    for idx, len in enumerate(lengths) :
-        muscle = convertToPressure(len)
-        command += "maw"+str(64+idx)+"="+str(muscle)+"\r\n"
-    print command 
-    FSTs.sendto(command,(FST_ip, FST_port))
+    for idx, percent in enumerate(percents) :
+        muscle = convertToPressure(percent)
+        command = "maw"+str(64+idx)+"="+str(muscle)+"\r\n"
+        print command 
+        FSTs.sendto(command,(FST_ip, FST_port))
 
     
 class MyTCPHandler(SocketServer.StreamRequestHandler):
@@ -61,8 +65,8 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
                            #optional reply on move receive
                            #conn.send("moving to moveEvent data")
                            #compulsory forward of data
-                           lengths = j['rawArgs']                  
-                           FST_send(lengths)
+                           percent = (j['rawArgs']*50)+50 
+                           FST_send(percent)
                            print "Sent to FST"            
                         elif j['method'] == 'geometry':
                            self.sendGeometry()
@@ -75,14 +79,14 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
         
     def sendGeometry(self):
        #todo add exception handling for send 
-       g = '{"jsonrpc":"2.0","reply":"geometry","effectorName":"Chairserver","baseRadius":176,"platformRadius":216,"initialHeight":680,"maxTranslation":40,"maxRotation":25,"platformAngles":[147,154,266,274,26,33],"baseAngles":[140,207,226,314,334,40]}\n'
+       g = '{"jsonrpc":"2.0","reply":"geometry","effectorName":"Chairserver","baseRadius":176,"platformRadius":216,"initialHeight":728,"maxTranslation":40,"maxRotation":25,"actuatorLen":[666,790],"platformAngles":[147,154,266,274,26,33],"baseAngles":[140,207,226,314,334,40]}\n'
        print "sending geometry", g
        self.wfile.write(g)    
             
 if __name__ == "__main__":
     # setup the UDP Socket  
     FST_ip = '127.0.0.1'
-    FST_port = 10007 #TODO - change this back to correct festo port
+    FST_port = 5005 
     print "Chair server opening festo socket on ", FST_port
     FSTs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
