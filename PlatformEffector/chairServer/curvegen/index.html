@@ -1,0 +1,106 @@
+<Style>
+.btn-file {
+  position: relative;
+  overflow: hidden;
+}
+.btn-file input[type=file] {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 100%;
+  min-height: 100%;
+  font-size: 100px;
+  text-align: right;
+  filter: alpha(opacity=0);
+  opacity: 0;
+  background: red;
+  cursor: inherit;
+  display: block;
+}
+input[readonly] {
+  background-color: white !important;
+  cursor: text !important;
+}
+</Style>
+
+
+
+
+<br>
+    <div class="container">
+      <div class="header clearfix">
+        <nav>
+          <ul class="nav nav-pills pull-right">
+            <li role="presentation" class="active"><a href="#">Home</a></li>
+            <li role="presentation"><a href="mailto:c.knott@mdx.ac.uk">Contact</a></li>
+          </ul>
+        </nav>
+        <h3 class="text-muted">MDX LOCO CURVE GENERATOR</h3>
+      </div>
+
+                <h4>Welcome</h4>
+          <p>This is a Curve Generator that can be used to define "movement profiles" for the chair.</p>
+
+
+          <h4>How To Use</h4>
+          <p> Drag the points around, click download, or upload and edit! <p>
+
+
+
+
+      <div class="jumbotron">
+       <div id="container" style="height: 400px"></div>
+      </div>
+
+<a id="download"><button class="btn btn-lg btn-success" >Download</button></a>
+
+            <span class="file-input btn btn-lg btn-success btn-file">
+                Upload&hellip; <input id="fileinput" type="file" multiple>
+            </span>
+
+
+
+      <div class="row marketing">
+        <div class="col-lg-6">
+        <br>
+          <h4>Files</h4>
+			<div class="list-group">
+			  <a href="#" class="list-group-item active">
+			    Cras justo odio
+			  </a>
+			  <a href="#" class="list-group-item">Dapibus ac facilisis in</a>
+			  <a href="#" class="list-group-item">Morbi leo risus</a>
+			  <a href="#" class="list-group-item">Porta ac consectetur ac</a>
+			  <a href="#" class="list-group-item">Vestibulum at eros</a>
+			</div>
+
+
+
+        
+        </div>
+
+        <div class="col-lg-6">
+          <h4>Current CSV</h4>
+          <pre id="csv">
+
+          </pre>
+        </div>
+      </div>
+
+
+    </div> <!-- /container -->
+
+
+
+
+<script src="jquery.js"></script>
+<script src="highcharts.js"></script>
+<script src="draggable-points.js"></script>
+<script src="exporting.js"></script>
+<script src="export-csv.js"></script>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="bootstrap.min.css">
+<link rel="stylesheet" href="flat-ui.css">
+<!-- Latest compiled and minified JavaScript -->
+<script src="bootstrap.min.js"></script>
+<script src="script.js"></script>

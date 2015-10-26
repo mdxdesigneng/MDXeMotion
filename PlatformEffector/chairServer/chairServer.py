@@ -11,7 +11,7 @@ import sys
 
 # len:790mm                                  666mm  
 _in =[100 ,90 ,80 ,70 ,60 ,50 ,40 ,30 ,20 ,10 ,0 ]
-_out=[400   ,500 ,1000,1500,2000,2500,3000,3500,4000,4500,5000]
+_out=[400  ,500 ,1000,1500,2000,2500,3000,3500,4000,4500,5000]
 
 def multiMap(val, _in, _out, size):
   #// take care the value is within range
@@ -33,8 +33,19 @@ def multiMap(val, _in, _out, size):
 
 
 
+_pressures=[400  ,500 ,1000,1500,2000,2500,3000,3500,4000,4500,5000]
+def scale(percent):
+     #safteyCheck - clamp negative or +100 values
+    percent = max(min(99, percent), 0)
+    pressureRange = _pressures[percent/10+1] - _pressures[percent/10]
+    musclePressureMultiplier = (percent % 10) / float(10)
+    musclePressure = _pressures[percent/10] + (musclePressureMultiplier * pressureRange)
+    return musclePressure
+    
+
 def convertToPressure(percent):
-    musclePressure = multiMap(percent,_in,_out,11)
+    #musclePressure = multiMap(percent,_in,_out,11)
+    musclePressure = scale(percent)
     return musclePressure
 
 
