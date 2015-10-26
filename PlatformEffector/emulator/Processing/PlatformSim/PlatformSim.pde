@@ -1,3 +1,5 @@
+// PlatformSim
+
 import peasy.*;
 import controlP5.*;
 import processing.net.*;
@@ -189,6 +191,13 @@ void geometryReply(Client c) {
     platformArray.setFloat(i, ChairPlatformDef.platformAngles[i]);    
   }  
   j.setJSONArray("platformAngles", platformArray);
+ 
+ 
+  JSONArray actuatorLen = new JSONArray();
+  actuatorLen.setFloat(0, ChairPlatformDef.minActuatorLen);    
+  actuatorLen.setFloat(1, ChairPlatformDef.maxActuatorLen);  
+  j.setJSONArray("actuatorLen", actuatorLen);
+  
  // j.setFloat("actuatorLen", mPlatform.actuatorLen);
   j.setFloat("initialHeight", ChairPlatformDef.initialHeight); // todo !!!
   j.setFloat("maxTranslation", ChairPlatformDef.maxTranslation);
