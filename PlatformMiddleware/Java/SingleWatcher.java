@@ -32,6 +32,7 @@ public class SingleWatcher extends Thread {
     
     public boolean announce(String s) {      
         this.out.println(s);
+        //System.out.println("announcing: " + s);
         if(out.checkError())
         {
              return false; // if error writing to socket

@@ -10,11 +10,15 @@ public class PlatfromTransforms {
 	private PVector[] baseJoint, platformJoint, q, l, A;
 	private float baseRadius, platformRadius;
 	private float maxTranslation, maxRotationRadians;
+	private float minLen; 
+	private float maxLen;
 
 	public PlatfromTransforms() {	
 	}
 
-	public void begin(EffectorInterface.effectorDef def) {
+	public void begin(EffectorInterface.effectorDef def) {	
+		minLen = def.minActuatorLen;
+		maxLen = def.maxActuatorLen;
 		translation = new PVector();
 		initialHeight = new PVector(0, 0, def.initialHeight );
 		rotation = new PVector();
@@ -63,18 +67,21 @@ public class PlatfromTransforms {
  
 	}
 	
-	public void applyTranslationAndRotation(PVector t, PVector r) {
+	public void applyTranslationAndRotation(PVector t, PVector r) {	  
 		rotation.set(PVector.mult(r, maxRotationRadians));
-		translation.set(PVector.mult(t,maxTranslation));
+		translation.set(PVector.mult(t,maxTranslation));		
 		calcQ();
 		//showAll();
 	}	
 	
 	public float getRawLength(int index) {
-	   return (l[index].mag()) ; 
+		 float v = l[index].mag();
+		 float vnormalized = -1 + ((v - minLen) * 2 / (maxLen - minLen));
+		 //System.out.format("%d  %f %f\n", index, v, vnormalized  );  	
+	   return (vnormalized) ; 
 	}
 
-	private void calcQ() {		
+	private void calcQ() {		   
 	        for (int i=0; i<6; i++) {
 	          // rotation	        		        	
 	          q[i].x = (float) (Math.cos(rotation.z)*Math.cos(rotation.y)*platformJoint[i].x +
@@ -91,7 +98,7 @@ public class PlatfromTransforms {
 
 	          // translation
 	          q[i].add(PVector.add(translation, initialHeight));
-	          l[i] = PVector.sub(q[i], baseJoint[i]);	          
+	          l[i] = PVector.sub(q[i], baseJoint[i]);	        
 	        }
 	   }
       

@@ -1,7 +1,16 @@
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.util.concurrent.locks.Lock;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -17,8 +26,9 @@ import org.json.simple.parser.ParseException;
 
 public class PlatformApi extends Thread {
 	
-	public abstract class msgFields {
-		public boolean isRaw;
+	public static String clientName; // optional name of saved configuration file to load
+	public abstract class msgFields {		
+		public boolean isRaw;		
 		public float v[];
 		public msgFields() {
 		   v = new float[6];
@@ -47,14 +57,14 @@ public class PlatformApi extends Thread {
 		void setYaw(float val)  { v[5] = val; } 
 	}
 
-	private static class config {
+	public static class config {
 		float gainX     = (float) 1.0; // factor for x values
 		float gainY     = (float) 1.0; // factor for y values
 		float gainZ     = (float) 1.0; // factor for z values
 		float gainRoll  = (float) 1.0; // factor for roll values
 		float gainPitch = (float) 1.0; // factor for pitch values
 		float gainYaw   = (float) 1.0; // factor for yaw values
-		float gain      = (float) 1.0; // factor for all values
+		float gainMaster  = (float) 1.0; // factor for all values
 
 		float washoutX     = (float) 1.0; // washout factor for x values
 		float washoutY     = (float) 1.0; // washout factor for y values
@@ -71,11 +81,23 @@ public class PlatformApi extends Thread {
 	BufferedReader reader;
 	JSONArray values = new JSONArray();
 	
-	private static final int INACTIVITY_TIMEOUT = 2000; // message interval to reset initial conditions
+	private static final int INACTIVITY_TIMEOUT = 2000; // message interval to reset initial conditions	   
+    private static final float washoutGain = (float)1.2; // higher numbers increase washout
 	private long prevMsgTime=0;
-	static float washedYaw=0;
+	static float washedX=0;
+	static float prevX=0;
+	static float washedY=0;
+	static float prevY=0;
+	static float washedZ=0;
+	static float prevZ=0;
+	static float washedRoll=0;
+	static float prevRoll=0;
+	static float washedPitch=0;
+	static float prevPitch=0;
+	static float washedYaw=0;	
 	static float prevYaw = 999; // a magic number used to detect first actual msg
-	static float washedZAccel=0;
+	
+	static float washedZAccel=0;  // not used in this version
 	static float prevZAccel=0;
 
 	public PlatformApi(Lock l) {
@@ -84,8 +106,7 @@ public class PlatformApi extends Thread {
 	}
 
 	void begin() {
-		cfg = new config();
-		
+		cfg = new config();	
 	}
 
 	void end() {
@@ -113,21 +134,38 @@ public class PlatformApi extends Thread {
 	}
 	
 	public static xyzMsg shapeData(xyzMsg msg) {
-	    msg.setX( msg.getX() * cfg.gainX * cfg.gain);
-	    msg.setY( msg.getY() * cfg.gainY * cfg.gain);
-	    msg.setZ( msg.getZ() * cfg.gainZ * cfg.gain);
-	    msg.setRoll( msg.getRoll() * cfg.gainRoll * cfg.gain);
-	    msg.setPitch(msg.getPitch() * cfg.gainPitch * cfg.gain);
-	    msg.setYaw(msg.getYaw() * cfg.gainYaw *cfg.gain);
+	    msg.setX( msg.getX() * cfg.gainX * cfg.gainMaster);
+	    msg.setY( msg.getY() * cfg.gainY * cfg.gainMaster);
+	    msg.setZ( msg.getZ() * cfg.gainZ * cfg.gainMaster);
+	    msg.setRoll( msg.getRoll() * cfg.gainRoll * cfg.gainMaster);
+	    msg.setPitch(msg.getPitch() * cfg.gainPitch * cfg.gainMaster);
+	    msg.setYaw(msg.getYaw() * cfg.gainYaw *cfg.gainMaster);
 	    
-	    // calculate washout	 	
+	    // calculate washout
+	    washedX = (cfg.washoutX * washedX) + washoutGain*( msg.getX() - prevX); 
+	    prevX = msg.getX();
+	    msg.setX( washedX );
+	    //System.out.format("(%f) x washout- msg:%f, washed:%f  %f   %f\n",cfg.washoutX, msg.getX(),  washedX,(cfg.washoutX * washedX), ( msg.getX() - prevX));	
+	    washedY = (cfg.washoutY * washedY) + washoutGain*( msg.getY() - prevY); 
+	    prevY = msg.getY();
+	    msg.setY( washedY );
+	    washedZ = (cfg.washoutZ * washedZ) + washoutGain*( msg.getZ() - prevZ); 
+	    prevZ = msg.getZ();
+	    msg.setZ( washedZ );
+	    washedRoll = (cfg.washoutRoll * washedRoll) + washoutGain*( msg.getRoll() - prevRoll); 
+	    prevRoll = msg.getRoll();
+	    msg.setRoll( washedRoll );
+	    washedPitch = (cfg.washoutPitch * washedPitch) + washoutGain*( msg.getPitch() - prevPitch); 
+	    prevPitch = msg.getPitch();
+	    msg.setPitch( washedPitch );	    
+        // yaw calculation refers to the change in yaw, not absolute yaw angle 
 	    if( prevYaw > 900)
 	    	prevYaw = msg.getYaw(); // sets yaw to 0 at startup
 	    float yawDelta = msg.getYaw() - prevYaw ;
 	    if ( yawDelta < -1 ) yawDelta += 2 ;
 	    if ( yawDelta > 1 ) yawDelta -= 2 ; 
 	    washedYaw = cfg.washoutYaw * ( washedYaw + yawDelta );
-	    //System.out.format("yaw washout- msg:%f, delta:%f, washed:%f\n",msg.yaw, yawDelta, washedYaw);	
+	    //System.out.format("yaw washout- msg:%f, delta:%f, washed:%f\n",msg.getYaw(), yawDelta, washedYaw);	
 	    prevYaw =  msg.getYaw();
 	    msg.setYaw( washedYaw);
 	    return msg;
@@ -203,17 +241,26 @@ public class PlatformApi extends Thread {
 		   // todo - scale non normalized values	
 		}
 	}
-
+	
 	void parseConfig(JSONObject json1) {
 		//System.out.println(json1.toString());
-
+		try{				
+		        clientName = json1.get("ClientName").toString();				
+				if (clientName != null) {
+					System.out.format(" %s ", clientName);					
+					loadConfig(); // sending ClientName will  (re)load config
+					Gui.updateLabels("in", "Input Source Connected to " + clientName);
+				}				
+        }
+	    catch(Exception e ){} 	  //ignore name if any error	   			
+	
 		cfg.gainX = getOptionalField(json1, "gainX", cfg.gainX);
 		cfg.gainY = getOptionalField(json1, "gainY", cfg.gainY);
 		cfg.gainZ = getOptionalField(json1, "gainZ", cfg.gainZ);
 		cfg.gainRoll = getOptionalField(json1, "gainRoll", cfg.gainRoll);
 		cfg.gainPitch = getOptionalField(json1, "gainPitch", cfg.gainPitch);
 		cfg.gainYaw = getOptionalField(json1, "gainYaw", cfg.gainYaw);
-		cfg.gain = getOptionalField(json1, "gain", cfg.gain);
+		cfg.gainMaster = getOptionalField(json1, "gain", cfg.gainMaster);
 
 		cfg.washoutX = getOptionalField(json1, "washoutX", cfg.washoutX);
 		cfg.washoutY = getOptionalField(json1, "washoutY", cfg.washoutY);
@@ -230,7 +277,7 @@ public class PlatformApi extends Thread {
 		  System.out.print("gainRoll="); System.out.println(cfg.gainRoll); 
 		  System.out.print("gainPitch="); System.out.println(cfg.gainPitch); 
 	      System.out.print("gainYaw="); System.out.println(cfg.gainYaw); 
-		  System.out.print("gain="); System.out.println(cfg.gain);
+		  System.out.print("gainMaster="); System.out.println(cfg.gainMaster);
 		  
 		  System.out.print("washoutX="); System.out.println(cfg.washoutX);
 		  System.out.print("washoutY="); System.out.println(cfg.washoutY);
@@ -240,35 +287,126 @@ public class PlatformApi extends Thread {
 		  System.out.print("washoutYaw="); System.out.println(cfg.washoutYaw);		
 	}
 
+	static void saveConfig() {	
+		if ( clientName != null) {
+			try
+	        {
+			    String fname = clientName + ".cfg";
+				File outf = new File(fname);
+				if(!outf.exists()) {
+				    outf.createNewFile();
+			    }			
+	            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outf), "UTF-8"));
+	            for ( Field  f : cfg.getClass().getDeclaredFields()) {
+	                StringBuffer oneLine = new StringBuffer();
+	                oneLine.append(f.getName());
+	                oneLine.append(",");
+	                try {
+						oneLine.append(f.get(cfg).toString());
+					} catch (IllegalArgumentException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IllegalAccessException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}	      
+	                bw.write(oneLine.toString());
+	                bw.newLine();
+	            }
+	            bw.flush();
+	            bw.close();
+	        }
+	        catch (UnsupportedEncodingException e) {}
+	        catch (FileNotFoundException e){}
+	        catch (IOException e){}
+		}			
+				
+	}
+	
+	static void loadConfig() {
+		System.out.print("in load cfg");
+		if ( clientName != null) {	
+		    String fname = clientName + ".cfg";
+			File infile = new File(fname);
+			if(!infile.exists()) {
+				System.out.println( infile.getName() +" does not exist");
+			     return;			   
+			}
+			else {
+				System.out.println("Reading config from " + infile.getName());
+				BufferedReader br = null;
+				String line = "";	
+				try {
+					br = new BufferedReader(new FileReader(infile));
+					while ((line = br.readLine()) != null) {
+						 String[] l = line.split(",");
+						 Field f;
+						try {
+							f = cfg.getClass().getDeclaredField(l[0]);
+							if(f != null) {
+								 float val = Float.parseFloat(l[1]); 
+								 try {
+									f.set(cfg, val);
+									System.out.format("set field %s to %f\n", l[0], val);
+									
+								} catch (IllegalArgumentException | IllegalAccessException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							 }
+							 
+						} catch (NoSuchFieldException | SecurityException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}					 
+				
+					}					
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				} finally {
+					if (br != null) {
+						try {
+							br.close();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			}				
+	    }				
+	}
+	
 	void parseMsg(String msg) {
 		// todo - needs robust error handling for missing keys and values
 		JSONParser parser = new JSONParser();
 		try {
 			if(msg.length() > 0){
-			Object obj = parser.parse(msg);
+				Object obj = parser.parse(msg);
 				if(obj != null){
 					
-			JSONObject jsonObject = (JSONObject) obj;
-
-			if ((boolean) (jsonObject.get("method").equals("config"))) {
-				parseConfig(jsonObject);
+					JSONObject jsonObject = (JSONObject) obj;
+		
+					if ((boolean) (jsonObject.get("method").equals("config"))) {
+						parseConfig(jsonObject);
 						//printConfig();
-			} else // its a movement message?, parse fields
-			{
-				// print(json1);
-				boolean isNormalized = true;
-				if(jsonObject.containsKey("units")) {
-				    if ((boolean) (jsonObject.get("units").equals("real")))
-					    isNormalized = false;
-				    else if ((boolean) (jsonObject.get("units").equals("norm")))
-					    isNormalized = true; // default, but set anyway	
-				}
-				JSONArray values = (JSONArray) jsonObject.get("args");
-				if ((boolean) (jsonObject.get("method").equals("raw")))
-					parseRaw(isNormalized, values);
-				else if ((boolean) (jsonObject.get("method").equals("xyzrpy")))
-					parseXyzrpy(isNormalized, values);
-			}
+					} else // its a movement message?, parse fields
+					{
+						// print(json1);
+						boolean isNormalized = true;
+						if(jsonObject.containsKey("units")) {
+						    if ((boolean) (jsonObject.get("units").equals("real")))
+							    isNormalized = false;
+						    else if ((boolean) (jsonObject.get("units").equals("norm")))
+							    isNormalized = true; // default, but set anyway	
+						}
+						JSONArray values = (JSONArray) jsonObject.get("args");
+						if ((boolean) (jsonObject.get("method").equals("raw")))
+							parseRaw(isNormalized, values);
+						else if ((boolean) (jsonObject.get("method").equals("xyzrpy")))
+							parseXyzrpy(isNormalized, values);
+					}
 				}
 			}
 		} catch (ParseException e) {
@@ -283,6 +421,7 @@ public class PlatformApi extends Thread {
 			Socket client = middlewareServer.accept();
 			prevMsgTime = System.currentTimeMillis();
 			System.out.println("Middleware connected to client at " + client.getRemoteSocketAddress().toString());
+			Gui.updateLabels("in", "Input Source Connected");		
 			BufferedReader inFromClient = new BufferedReader(new InputStreamReader(client.getInputStream()));
 			String msg;			
 			while (true) {
@@ -298,6 +437,7 @@ public class PlatformApi extends Thread {
 					}
 					else {						
 						System.out.println("Middleware client Disconnected, waiting for new connection");
+						Gui.updateLabels("in", "Input Source NOT Connected");
 						client = middlewareServer.accept();
 						System.out.print("Connected to " + client.getRemoteSocketAddress().toString());
 						inFromClient = new BufferedReader(new InputStreamReader(client.getInputStream()));

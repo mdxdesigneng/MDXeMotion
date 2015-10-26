@@ -34,21 +34,23 @@ public class EffectorInterface {
 		float initialHeight;      // mm distance between the base and platform when centered
 		float maxTranslation;     // mm
         float maxRotation;        // angle in degrees
+		float minActuatorLen;     // mm 
+		float maxActuatorLen;     // mm 
         public effectorDef() {
         	baseAngles = new float[6];
         	platformAngles = new float[6];
         	actuatorLen = new float[2];        			
         }
-	}
-	
+	}	
+
 	effectorDef effectorGeometry;	
- 
+ 	
 	public effectorDef begin(InetAddress ip, int port, int watcherPort ) {  // returns false if unable to connect to the Effector socket
 	   effectorIP = ip;
 	   effectorPort = port;	  
 	   if( connectToEffector()) {	
 	      announcer = new AnnouncementServer(watcherPort);
-		  announcer.start(); 
+		  announcer.start();		
 		  return effectorGeometry;
 	   }
 	   return null;
@@ -101,6 +103,8 @@ public class EffectorInterface {
 		  System.out.print("initialHeight="); System.out.println(effectorGeometry.initialHeight);
 		  System.out.print("maxTranslation="); System.out.println(effectorGeometry.maxTranslation);
 		  System.out.print("maxRotation="); System.out.println(effectorGeometry.maxRotation);
+		  System.out.print("minActuatorLen="); System.out.println(effectorGeometry.minActuatorLen);
+		  System.out.print("maxActuatorLen="); System.out.println(effectorGeometry.maxActuatorLen);
 	
 	}
 
@@ -111,7 +115,7 @@ public class EffectorInterface {
 			JSONObject jsonObject = (JSONObject) obj;
 
 			if ((boolean) (jsonObject.get("reply").equals("geometry"))) {
-				// todo - this needs code to handle missing or malformed messages !!!				
+				// todo - this needs code to handle missing or malformed messages !!!
 				effectorGeometry.name =  jsonObject.get("effectorName").toString();
 				effectorGeometry.platformRadius = Float.valueOf(jsonObject.get("platformRadius").toString()).floatValue();
 				effectorGeometry.baseRadius = Float.valueOf(jsonObject.get("baseRadius").toString()).floatValue();				
@@ -121,9 +125,9 @@ public class EffectorInterface {
 					effectorGeometry.platformAngles[i] = Float.valueOf(platformAngles.get(i).toString()).floatValue();
 					effectorGeometry.baseAngles[i] = Float.valueOf(baseAngles.get(i).toString()).floatValue();
 				}				
-				//JSONArray actuatorLen = (JSONArray) jsonObject.get("actuatorLen");
-				// effectorGeometry.minActuatorLen = Float.valueOf(actuatorLen.get(0).toString()).floatValue();
-				// effectorGeometry.maxActuatorLen = Float.valueOf(actuatorLen.get(1).toString()).floatValue();
+				JSONArray actuatorLen = (JSONArray) jsonObject.get("actuatorLen");
+				effectorGeometry.minActuatorLen = Float.valueOf(actuatorLen.get(0).toString()).floatValue();
+			    effectorGeometry.maxActuatorLen = Float.valueOf(actuatorLen.get(1).toString()).floatValue();
 				effectorGeometry.initialHeight = Float.valueOf(jsonObject.get("initialHeight").toString()).floatValue();
 				effectorGeometry.maxTranslation = Float.valueOf(jsonObject.get("maxTranslation").toString()).floatValue();
 				effectorGeometry.maxRotation = Float.valueOf(jsonObject.get("maxRotation").toString()).floatValue();
@@ -145,7 +149,7 @@ public class EffectorInterface {
 			effectorClient.setSoTimeout(5000);  // wait up to 5 seconds for a reply				
 			BufferedReader input =		
 		       new BufferedReader(new InputStreamReader(effectorClient.getInputStream()));
-			String reply =  (String) input.readLine();
+			String reply =  (String) input.readLine();			
 			if(reply != null){
 				parseGeometry(reply);	
 				showGeometry();	
@@ -174,12 +178,12 @@ public class EffectorInterface {
 				 raw[0], raw[1], raw[2], raw[3], raw[4], raw[5], xyz[0], xyz[1], xyz[2], xyz[3], xyz[4], xyz[5],
 				 effectorGeometry.maxTranslation, effectorGeometry.maxRotation,  effectorGeometry.actuatorLen[0], effectorGeometry.actuatorLen[1]  );
 	      */
-		  // this sends raw values and extents as ints
-	      s = s + String.format("\"rawArgs\":[%.0f,%.0f,%.0f,%.0f,%.0f,%.0f],\"xyzArgs\":[%.3f,%.3f,%.3f,%.3f,%.3f,%.3f],\"extents\":[%.0f,%.0f,%.0f,%.0f]}\n",
+		  // this sends raw values as floats and extents as ints
+	      s = s + String.format("\"rawArgs\":[%.3f,%.3f,%.3f,%.3f,%.3f,%.3f],\"xyzArgs\":[%.3f,%.3f,%.3f,%.3f,%.3f,%.3f],\"extents\":[%.0f,%.0f,%.0f,%.0f]}\n",
 				 raw[0], raw[1], raw[2], raw[3], raw[4], raw[5], xyz[0], xyz[1], xyz[2], xyz[3], xyz[4], xyz[5],
 				 effectorGeometry.maxTranslation, effectorGeometry.maxRotation,  effectorGeometry.actuatorLen[0], effectorGeometry.actuatorLen[1]  );
 		 
-       //  System.out.print(s);	
+         //System.out.print(s);	
          try {
             toEffector.writeUTF(s);
             isWriteSuccessful = true;
