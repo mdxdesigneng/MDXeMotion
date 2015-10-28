@@ -14,13 +14,18 @@ PeasyCam camera;
 Platform mPlatform;
 //ParseMessage parser;
 
-private static final int thisPort =  10002;
+private static final int mwPort =  10002;
 private static final String  MiddlewareIp = "localhost";
-Client myClient;
+Client mwClient;
+
+private static final int chairPort =  10003;
+private static final String  chairIp = "localhost";
+Client chairClient;
 
 float posX=0, posY=0, posZ=0, rotX=0, rotY=0, rotZ=0;
 
-CheckBox checkbox;
+CheckBox chkSend;
+CheckBox chkChair;  // sends to middleware when unchecked, to chair when checked
 
 PrintWriter output; // for csv output
 boolean isClientActive = false;
@@ -33,7 +38,8 @@ void setup()
   background(0);
   fill(255);
    
-  myClient = new Client(this, MiddlewareIp, thisPort);
+  mwClient = new Client(this, MiddlewareIp, mwPort);
+  chairClient = new Client(this, chairIp, chairPort);
    
   smooth();
   textSize(16);
@@ -68,12 +74,19 @@ void setup()
     .setPosition(width-210, 120)
       .setSize(180, 40).setRange(-1, 1);
 
-  checkbox = cp5.addCheckBox("send")
+  chkSend = cp5.addCheckBox("send")
     .setPosition(100, 200)
       .setSize(40, 40)
         .setItemsPerRow(1)   
           .setColorActive(color(255,0,0))    
           .addItem("Send", 0)  ;
+          
+  chkChair = cp5.addCheckBox("chair")
+    .setPosition(100, 250)
+      .setSize(40, 40)
+        .setItemsPerRow(1)   
+          .setColorActive(color(255,0,0))    
+          .addItem("Chair", 0) ;          
 
   cp5.setAutoDraw(false);
   camera.setActive(true); 
@@ -85,27 +98,37 @@ void draw() {
   
   mPlatform.applyTranslationAndRotation(PVector.mult(new PVector(posX, posY, posZ), MAX_TRANSLATION), 
                      PVector.mult(new PVector(rotY, rotX, rotZ), MAX_ROTATION));                     
-  if ( checkbox.getState(0) == true) {    
-    if (myClient !=null && myClient.active()) {
+  if ( chkSend.getState(0) == true) {
+      if ( chkChair.getState(0) == true) {
+        // send to chair
+         String s = String.format("{\"jsonrpc\":\"2.0\",\"method\":\"moveEvent\",\"xyzArgs\":[%f,%f,%f, %f,%f,%f]}\n",
+                        posX, posY, posZ,rotX, rotY, rotZ);                      
+          chairClient.write(s) ;
+          isClientActive = true;      
+          println(s);
+       }
+    }    
+    else if (mwClient !=null && mwClient.active()) {
+      // send to middleware
         String s = String.format("{\"jsonrpc\":\"2.0\",\"method\":\"xyzrpy\",\"args\":[%f,%f,%f, %f,%f,%f]}\n",
                       posX, posY, posZ,rotX, rotY, rotZ);                      
-        myClient.write(s) ;
+        mwClient.write(s) ;
         isClientActive = true;      
         println(s);
      } 
      else {
        isClientActive = false;
-     }  
-  }
+     }     
+ 
 
   mPlatform.draw();
   hint(DISABLE_DEPTH_TEST);
   camera.beginHUD();
   fill(100);
   text("Press space to reset translations and rotations to 0",20,470); 
-  if(checkbox.getState(0) && isClientActive == false) {
+  if(chkSend.getState(0) && isClientActive == false) {
        fill(0);
-       text("Client not connected",20,300); 
+       text("Not connected",20,300); 
   }
   cp5.draw();
   camera.endHUD();
