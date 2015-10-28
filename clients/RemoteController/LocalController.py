@@ -8,11 +8,14 @@ from collections import OrderedDict
 from SocketServer import StreamRequestHandler, TCPServer
 import SocketServer
 import time
-import pyautogui
-import SendKeys
+import win32gui, win32api, win32con, ctypes
 import msvcrt  # for kbhit
+from Mouse import Mouse
+import win32ui
 
-      
+
+mouse = Mouse()      
+
 def getch():
     return msvcrt.getch().decode('utf-8')                                 
 
@@ -20,40 +23,56 @@ def kbhit():
     # Returns True if keyboard character was hit, False otherwise.
     return msvcrt.kbhit()      
 
-
-class MyTCPHandler(SocketServer.StreamRequestHandler):
+resetPoint = (1440,840)    
+def testReset():
+    print 'test reset'    
+    mouse.visible_click_rel( windowHandle,resetPoint)        
     
-    pyautogui.PAUSE = 1
-    pyautogui.FAILSAFE = True
-    width, height = pyautogui.size()
-    print pyautogui.size()
 
+class MyTCPHandler(SocketServer.StreamRequestHandler):   
+    
+    def sendKey(self, c):
+        # not used in this version
+        win32api.SendMessage(windowHandle, win32con.WM_KEYDOWN, ord(c), 0) 
+        win32api.SendMessage(windowHandle, win32con.WM_CHAR, ord(c), 0)  
+        win32api.SendMessage(windowHandle, win32con.WM_KEYUP, ord(c), 0)           
+        
+        
     def pause(self):
-        print 'pause'
-        pyautogui.click(200, 200)
-        time.sleep(0.02)
-        #pyautogui.press(['P'])
-        SendKeys.SendKeys('P')  
+        print 'pause'     
+        #self.sendKey('P')
+        scancode = 0x19
+        lparam =  1 + (scancode << 16)    
+        global windowHandle
+        win32api.SendMessage(windowHandle, win32con.WM_KEYDOWN, ord('P'), lparam) 
+        win32api.SendMessage(windowHandle, win32con.WM_CHAR, ord('P'), lparam)  
+        win32api.SendMessage(windowHandle, win32con.WM_KEYUP, ord('P'), lparam)          
      
     def dispatch(self):
         print 'dispatch'
-        pyautogui.click(200, 200)
-        time.sleep(0.02)
-        #pyautogui.press(['i'])
-        SendKeys.SendKeys('i')  
+        #self.sendKey('i') 
+        scancode = 0x17
+        lparam =  1 + (scancode << 16)     
+        global windowHandle
+        win32api.SendMessage(windowHandle, win32con.WM_KEYDOWN, ord('I'), lparam) 
+        win32api.SendMessage(windowHandle, win32con.WM_CHAR, ord('i'), lparam)  
+        win32api.SendMessage(windowHandle, win32con.WM_KEYUP, ord('I'), lparam)  
+  
      
     def reset(self):
         print 'reset'
-        ##pyautogui.moveTo(width-25, height-25)
-        #pyautogui.press(['f4'])
-        #pyautogui.click(self.width-25, self.height-20)
-        pyautogui.click(1645,895) # for rift
+        global resetPoint
+        global windowHandle
+        global mouse
+        mouse.invisible_click_rel( windowHandle,resetPoint)        
         time.sleep(1.0)
-        #pyautogui.press(['f4'])
         
     dispatcher = { 'pause' : pause, 'dispatch' : dispatch,  'reset' : reset} 
 
+  
+    
     def handle(self):    
+      
         while True:   
             if kbhit():
                 c = getch()                
@@ -68,16 +87,24 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
                 if action != None:                
                    self.dispatcher[action](self)  
                 else:
-                   print  json_str
-               
+                   print  json_str           
+  
 
-
-if __name__ == "__main__":
-    HOST, PORT = '', 10007
-
-    # Create the server, binding to localhost on port effector port
-    server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)
-    print "Local NL2 key/mouse controller"
-    server.serve_forever()  
+if __name__ == "__main__":   
+    windowClass = "NL3D_MAIN_{7F825CE1-21E4-4C1B-B657-DE6FCD9AEB12}"
+    windowname = "Colossus.nl2park (ReadOnly) - NoLimits 2"   
+    windowHandle = win32gui.FindWindow(windowClass,None );
+    if windowHandle > 0:
+       print "found NL2 window at ", windowHandle
+       testReset()  # move the mouse to the reset location in the NL2 window
+       
+       # Create the server, binding to localhost on port effector port
+       HOST, PORT = '', 10007 
+       server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)
+       print "Local NL2 key/mouse controller"
+       server.serve_forever()
+    else:
+      print "Did not find NL2 window, startup NL2 and rerun this script" 
+  
    
     

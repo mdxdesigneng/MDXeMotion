@@ -5,7 +5,7 @@ import sys
 import time
 from serial import *
 
-serialPort = "COM25"
+serialPort = "COM22"
 baudRate = 9600
 ser = Serial(serialPort , baudRate, timeout=0, writeTimeout=0) 
 serBuffer = ""
