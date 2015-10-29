@@ -24,17 +24,24 @@ def scale(percent):
      e = sys.exc_info()[0]
      print "scale error:", e  
 
-def convertToPressure(percent):
-    musclePressure = scale(percent)
+def pressureAdjust(pressure,idx):
+    # This reduces the pressure by 500 on the back muscles. 2,3
+    # And by 250 on the second to back muscles, 1,4
+    _adjusts=[0,-250,-500,-500,-250,0]
+    ajustedPressure = pressure + _adjusts[idx]
+    return ajustedPressure
+
+
+def convertToPressure(idx, percent):
+    musclePressure = pressureAdjust(scale(percent),idx) 
     return musclePressure
 
 
 def FST_send(percents):
     # todo - add better exception handling for potential conversion and socket errors
-    command = ""
     try:
         for idx, percent in enumerate(percents) :
-            muscle = convertToPressure(percent)
+            muscle = convertToPressure(idx, percent) #idx needed for Adjustsing the pressures for muscles 2,3
             command = "maw"+str(64+idx)+"="+str(muscle)+"\r\n"
             print command 
             try:
