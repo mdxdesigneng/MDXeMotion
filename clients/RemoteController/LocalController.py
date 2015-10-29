@@ -58,6 +58,9 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
         win32api.SendMessage(windowHandle, win32con.WM_CHAR, ord('i'), lparam)  
         win32api.SendMessage(windowHandle, win32con.WM_KEYUP, ord('I'), lparam)  
   
+    def emergencyStop(self):
+        print 'emergency stop '        
+  
      
     def reset(self):
         print 'reset'
@@ -67,7 +70,7 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
         mouse.invisible_click_rel( windowHandle,resetPoint)        
         time.sleep(1.0)
         
-    dispatcher = { 'pause' : pause, 'dispatch' : dispatch,  'reset' : reset} 
+    dispatcher = { 'pause' : pause, 'dispatch' : dispatch,  'reset' : reset, 'emergencyStop': emergencyStop}  
 
   
     

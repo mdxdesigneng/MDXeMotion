@@ -85,7 +85,8 @@ client.send(createSimpleMessage(id, N_MSG_GET_VERSION))
 connectToMiddleware() 
 while True:
     try:
-        platform.sendEncodedConfig(platform.encodeWashoutConfig(0.996,0.996,0.996,0.996,0.996,0.996))
+        #platform.sendEncodedConfig(platform.encodeWashoutConfig(0.996,0.996,0.996,0.996,0.996,0.996))
+        platform.sendClientName("CoasterClient")
         break 
     except socket.error, e:
         print "unable to send config, retrying: ", middleware_ip_addr

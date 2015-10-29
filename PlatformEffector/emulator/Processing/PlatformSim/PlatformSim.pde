@@ -30,7 +30,7 @@ boolean isCoaseterRunning = false;
 
 boolean isChair;  // flag indicating chair or servo platform
 boolean isConnected = false;
-boolean echoToSerial = true;
+boolean echoToSerial = false;
 boolean dumpCSV = false;
 
 void setup()

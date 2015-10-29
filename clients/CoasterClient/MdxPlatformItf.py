@@ -64,3 +64,8 @@ def encodeWashoutConfig(washoutX,washoutY,washoutZ,washoutRoll,washoutPitch,wash
    msg = json.dumps(data, separators=(',',':')) + '\n'
    #print msg
    return msg
+   
+def sendClientName(name):
+   data = OrderedDict([("jsonrpc","2.0"),("method","config"),("ClientName",name)])
+   msg = json.dumps(data, separators=(',',':')) + '\n'
+   platformSock.send(msg) 
