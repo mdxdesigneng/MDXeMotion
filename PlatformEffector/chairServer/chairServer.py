@@ -91,8 +91,8 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
             
 if __name__ == "__main__":
     # setup the UDP Socket  
-    FST_ip = '127.0.0.1'
-    FST_port = 10007 
+    FST_ip = '192.168.10.10'
+    FST_port = 991 
     print "Chair server opening festo socket on ", FST_port
     FSTs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
