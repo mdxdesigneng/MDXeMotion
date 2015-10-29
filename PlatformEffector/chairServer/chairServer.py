@@ -9,29 +9,6 @@ import json
 import SocketServer
 import sys
 
-# len:790mm                                  666mm  
-_in =[100 ,90 ,80 ,70 ,60 ,50 ,40 ,30 ,20 ,10 ,0 ]
-_out=[400  ,500 ,1000,1500,2000,2500,3000,3500,4000,4500,5000]
-
-def multiMap(val, _in, _out, size):
-  #// take care the value is within range
-  #// val = constrain(val, _in[0], _in[size-1]);
-  if (val >= _in[0]):
-    return _out[0]
-  if (val <= _in[size-1]):
-       return _out[size-1]
-
-  #// search right interval
-  pos = 1;  #// _in[0] allready tested
-  while(val < _in[pos]):
-      pos+= 1
-  #// this will handle all exact "points" in the _in array
-  if (val == _in[pos]):
-    return _out[pos]
-  #// interpolate in the right segment for the rest
-  return int((val - _in[pos-1]) * (_out[pos] - _out[pos-1]) / (_in[pos] - _in[pos-1]) + _out[pos-1])
-
-
 
 _pressures=[400  ,500 ,1000,1500,2000,2500,3000,3500,4000,4500,5000]
 def scale(percent):
@@ -48,7 +25,6 @@ def scale(percent):
      print "scale error:", e  
 
 def convertToPressure(percent):
-    #musclePressure = multiMap(percent,_in,_out,11)
     musclePressure = scale(percent)
     return musclePressure
 
