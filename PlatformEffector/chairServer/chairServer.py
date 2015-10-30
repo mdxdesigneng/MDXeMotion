@@ -2,27 +2,53 @@
 # Input messages are normalized values for the 6 muscles
 # this is converted into percent of muscle length
 #     0% = 666mm, 100% = 790mm
-# a table is interpolated to convert the percent in to pressure out  
+# a table read from a CSV file is interpolated to convert percent to pressure
 
 import socket
 import json
 import SocketServer
 import sys
+import os.path
+import csv
 
+csvFname = "active.csv"
 
+#default values used if CSV file not found
 _pressures=[400  ,500 ,1000,1500,2000,2500,3000,3500,4000,4500,5000]
-def scale(percent):
-     #safteyCheck - clamp negative or +100 values
+
+def percentToPressure(percent):     
   try:
-    percent = max(min(99.9, percent), 0)
-    index = int(percent)
-    pressureRange = _pressures[ index/10+1] - _pressures[index/10]
-    musclePressureMultiplier = (percent % 10) / float(10)
-    musclePressure = _pressures[index/10] + (musclePressureMultiplier * pressureRange)   
+    percent = max(min(99.99, percent), 0) #clamp negative or 100+ values
+    step = 100.0/ (len(_pressures)-1)
+    index = int(percent/ step)     
+    musclePressure = scale((percent % step)*100/step, (0,100),( _pressures[index], _pressures[index+1]))                   
+    print  musclePressure     
     return musclePressure
   except:
      e = sys.exc_info()[0]
      print "scale error:", e  
+
+def scale( val, src, dst) :   # the Arduino 'map' function written in python  
+  return (val - src[0]) * (dst[1] - dst[0]) / (src[1] - src[0])  + dst[0]
+    
+def readCSV(fname):
+    if os.path.isfile(fname): 
+        f = open(fname, 'rt')   
+        heading = f.readline()   
+        if heading == '"Category","Pressure"\n':        
+            try:
+                reader = csv.reader(f)
+                rows = iter(reader)                      
+                # todo - need exception handling here             
+                _pressures = list(int(p[1]) for p in rows)
+                print "Using pressures from file: ", fname
+            finally:
+                f.close()           
+            print "pressures",_pressures            
+        else:
+           print "Did not find header in csv file: ", fname,", using default pressures"
+    else:
+       print fname," not found, using default pressures"
 
 def pressureAdjust(pressure,idx):
     # This reduces the pressure by 500 on the back muscles. 2,3
@@ -33,7 +59,7 @@ def pressureAdjust(pressure,idx):
 
 
 def convertToPressure(idx, percent):
-    musclePressure = pressureAdjust(scale(percent),idx) 
+    musclePressure = pressureAdjust(percentToPressure(percent),idx) 
     return musclePressure
 
 
@@ -90,9 +116,18 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
        self.wfile.write(g)    
             
 if __name__ == "__main__":
+    # replace defaults with pressure values from csv file
+    readCSV('active.csv')
+    
     # setup the UDP Socket  
-    FST_ip = '192.168.10.10'
-    FST_port = 991 
+    TESTING = True
+    if TESTING:        
+        FST_ip = 'localhost'
+        FST_port = 991 
+    else:  
+       FST_ip = '192.168.10.10'
+       FST_port = 991 
+
     print "Chair server opening festo socket on ", FST_port
     FSTs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 

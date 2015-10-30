@@ -2,7 +2,7 @@ import socket
 print "Welcome to the FST Emulator"
 
 UDP_IP = '' # listen on all adapters
-UDP_PORT = 10007
+UDP_PORT = 991
 
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
