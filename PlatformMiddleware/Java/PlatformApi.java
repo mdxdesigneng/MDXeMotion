@@ -324,7 +324,7 @@ public class PlatformApi extends Thread {
 	}
 	
 	static void loadConfig() {
-		System.out.print("in load cfg");
+		//System.out.print("in load cfg: ");
 		if ( clientName != null) {	
 		    String fname = clientName + ".cfg";
 			File infile = new File(fname);

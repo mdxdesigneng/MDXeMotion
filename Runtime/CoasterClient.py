@@ -1,7 +1,7 @@
 # Coaster interface
 __author__ = 'Michael Margolis'
 
-import MdxPlatformItf as platform
+import MdxPlatformItf 
 import socket
 from time import sleep
 from struct import *
@@ -9,6 +9,8 @@ import collections
 from quaternion import Quaternion
 from math import pi, degrees
 from setConsoleCaption import identifyConsoleApp
+import sys
+import msvcrt  # for kbhit
 
 interval = .05  #time in seconds between telemetry requests
 middleware_ip_addr = 'localhost'
@@ -32,6 +34,15 @@ c_nExtraSizeOffset = 9  # Start of extra size data within message
 telemetryMsg = collections.namedtuple('telemetryMsg','state,frame,viewMode,coasterIndex,coasterStyle,train,car,seat,speed,posX,posY,posZ,quatX,quatY,quatZ,quatW,gForceX,gForceY,gForceZ')
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+platform = MdxPlatformItf.middlewareClient()
+
+def getch():
+    return msvcrt.getch().decode('utf-8')                                 
+
+def kbhit():
+    # Returns True if keyboard character was hit, False otherwise.
+    return msvcrt.kbhit() 
+    
 def processTelemetryMsg( msg):
    # this version only creates a normalized message
    if(msg.state & 1): # only process if coaster is in play
@@ -69,6 +80,7 @@ def connectToMiddleware():
             break 
         except socket.error, e:
             print "unable to connect to middleware, retrying: ", middleware_ip_addr
+            sleep(.5)
  
  
 def connectToCoaster():
@@ -79,8 +91,24 @@ def connectToCoaster():
            break;
         except socket.error, e:
            print "unable to connect to NL2, retrying: ", coaster_ip_addr
-
+            
+def sendName(name):
+      try:        
+         platform.sendClientName("CoasterClient") #resend name
+         print "sent name"
+      except :  
+          print "Error sending to middleware, attempting reconnect...",          
+          try:            
+             platform.connect(middleware_ip_addr);            
+             sleep(1)              
+             platform.sendClientName("CoasterClient") #resend name
+             print "reconnected"
+          except: 
+             #print sys.exc_info()[0]          
+             print "unable to message middleware, is it running?"     
+                
 if __name__ == "__main__":
+    print "CoasterClient (press esc followed by q to quit)"
     identifyConsoleApp()
     connectToCoaster()           
     client.send(createSimpleMessage(id, N_MSG_GET_VERSION)) 
@@ -95,6 +123,16 @@ if __name__ == "__main__":
 
     while True:   
         #coastercClient, address = server.accept() 
+        if kbhit():
+            c = getch()                
+            if ord(c) == 27: # ESC
+                print "press 'q' to quit, any other key to continue"                       
+                if getch() == 'q':
+                    sys.exit(0)
+                print "CoasterClient running"    
+            elif c == ' ': #space
+              sendName("CoasterClient") #resend name
+                
         data = client.recv(coaster_buffer_size) 
         if data and len(data) >= 10: 
             #print len(data)           
