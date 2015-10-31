@@ -11,6 +11,7 @@ import time
 import win32gui, win32api, win32con, ctypes
 import msvcrt  # for kbhit
 from Mouse import Mouse
+from setConsoleCaption import identifyConsoleApp
 
 mouse = Mouse()      
 
@@ -92,6 +93,8 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
   
 
 if __name__ == "__main__":   
+    identifyConsoleApp()
+    print "Local NL2 key/mouse controller"  
     windowClass = "NL3D_MAIN_{7F825CE1-21E4-4C1B-B657-DE6FCD9AEB12}"
     windowname = "Colossus.nl2park (ReadOnly) - NoLimits 2"   
     windowHandle = win32gui.FindWindow(windowClass,None );
@@ -101,9 +104,7 @@ if __name__ == "__main__":
        
        # Create the server, binding to localhost on port effector port
        HOST, PORT = '', 10007 
-       server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)
-       print "Local NL2 key/mouse controller"
-       setConsoleCaption("LocalController.py") 
+       server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)           
        server.serve_forever()
     else:
       print "Did not find NL2 window, startup NL2 and rerun this script" 
