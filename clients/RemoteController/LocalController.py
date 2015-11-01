@@ -23,8 +23,9 @@ def kbhit():
     return msvcrt.kbhit()      
 
 resetPoint = (1440,840)    
+ 
 def testReset():
-    print 'test reset'    
+    print 'Moving cursor to reset point'    
     mouse.visible_click_rel( windowHandle,resetPoint)        
     
 
@@ -57,6 +58,8 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
         win32api.SendMessage(windowHandle, win32con.WM_CHAR, ord('i'), lparam)  
         win32api.SendMessage(windowHandle, win32con.WM_KEYUP, ord('I'), lparam)  
   
+        self.isCursorVisible = False 
+  
     def emergencyStop(self):
         print 'emergency stop '        
   
@@ -66,11 +69,16 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
         global resetPoint
         global windowHandle
         global mouse
+        
+        if self.isCursorVisible:
+           testReset()
+        else:
         mouse.invisible_click_rel( windowHandle,resetPoint)        
-        time.sleep(1.0)
+           time.sleep(0.5)
+           mouse.invisible_click_rel( windowHandle,(300,300)) # move mouse to remove reset tool tip        
         
     dispatcher = { 'pause' : pause, 'dispatch' : dispatch,  'reset' : reset, 'emergencyStop': emergencyStop}  
-
+    isCursorVisible = True  #this is set to False after first dispatch message    
   
     
     def handle(self):    
@@ -95,13 +103,15 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
 if __name__ == "__main__":   
     identifyConsoleApp()
     print "Local NL2 key/mouse controller"  
+    print "Restart remote controller if that was already running" 
+    print "Press reset to show mouse cursor point to reset ride"   
     windowClass = "NL3D_MAIN_{7F825CE1-21E4-4C1B-B657-DE6FCD9AEB12}"
     windowname = "Colossus.nl2park (ReadOnly) - NoLimits 2"   
     windowHandle = win32gui.FindWindow(windowClass,None );
     if windowHandle > 0:
        print "found NL2 window at ", windowHandle
        testReset()  # move the mouse to the reset location in the NL2 window
-       
+       print "Ready for connection from remote controller"  
        # Create the server, binding to localhost on port effector port
        HOST, PORT = '', 10007 
        server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)

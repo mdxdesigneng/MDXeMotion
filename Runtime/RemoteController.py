@@ -152,7 +152,8 @@ class RemoteController:
     
 if __name__ == "__main__": 
     identifyConsoleApp()
-    print "NL2 key/mouse remote controller"    
+    print "NL2 key/mouse remote controller"
+    print "Run this after starting local controllers"     
     args = (sys.argv)
     if len(args) > 1 :   
        print args
