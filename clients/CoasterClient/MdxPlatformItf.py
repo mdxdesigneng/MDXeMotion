@@ -24,7 +24,7 @@ class middlewareClient():
         return max(min(1.0, v),-1) # clamp the return value
 
     def sendXyzrpy(self, units, args):
-        msg = encodeXyzrpy(units, args)
+        msg = self.encodeXyzrpy(units, args)
         print "sending: ", msg
         self.platformSock.send(msg)
         
