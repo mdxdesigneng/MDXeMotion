@@ -21,10 +21,6 @@ coaster_buffer_size = 1024
 BACKLOG = 5 
 id=1
 
-COASTER_PITCH_SCALE_FACTOR = 80
-COASTER_ROLL_SCALE_FACTOR = 80
-COASTER_YAW_SCALE_FACTOR = 180
-
 N_MSG_GET_VERSION = 3
 N_MSG_VERSION = 4
 N_MSG_GET_TELEMETRY = 5
@@ -46,13 +42,13 @@ def kbhit():
 def processTelemetryMsg( msg):
    # this version only creates a normalized message
    if(msg.state & 1): # only process if coaster is in play
-       if(False):
+       if(False):          
            # code here is non-normalized (real) translation and rotation messages
            quat = Quaternion(msg.quatX,msg.quatY,msg.quatZ,msg.quatW)
            pitch = degrees(quat.toPitchFromYUp())
            yaw = degrees(quat.toYawFromYUp())
            roll = degrees(quat.toRollFromYUp())
-       else: #normalize
+       else: #normalize          
            quat = Quaternion(msg.quatX,msg.quatY,msg.quatZ,msg.quatW)
            pitch = quat.toPitchFromYUp() / pi
            yaw = quat.toYawFromYUp() / pi
@@ -61,11 +57,11 @@ def processTelemetryMsg( msg):
            y = platform.normalize(msg.gForceY,1);
            z = platform.normalize(msg.gForceZ,1);
            data = [x,y,z,roll, pitch, yaw] 
-           platform.sendXyzrpy('norm', data) 
+           platform.sendXyzrpy('norm', data)           
         
        if( msg.posX != 0 and msg.posY !=0):   
           print msg.posX, msg.posY, msg.posZ, pitch, yaw, roll
-          #print "pitch=", degrees( quat.toPitchFromYUp()),quat.toPitchFromYUp(), "roll=" ,degrees(quat.toRollFromYUp()),quat.toRollFromYUp()
+          #print "pitch=", degrees( quat.toPitchFromYUp()),quat.toPitchFromYUp(), "roll=" ,degrees(quat.toRollFromYUp()),quat.toRollFromYUp()  
    
 # see NL2TelemetryClient.java in NL2 distribution for message format
 def createSimpleMessage(requestId, msg):
