@@ -23,7 +23,6 @@ def percentToPressure(percent):
     step = 100.0/ (len(_pressures)-1)
     index = int(percent/ step)     
     musclePressure = scale((percent % step)*100/step, (0,100),( _pressures[index], _pressures[index+1]))                   
-    print  musclePressure     
     return musclePressure
   except:
      e = sys.exc_info()[0]
@@ -69,12 +68,14 @@ def FST_send(percents):
     try:
         for idx, percent in enumerate(percents) :
             muscle = convertToPressure(idx, percent) #idx needed for Adjustsing the pressures for muscles 2,3
-            command = "maw"+str(64+idx)+"="+str(muscle)+"\r\n"
-            print command 
+            command = "maw"+str(64+idx)+"="+str(muscle)
+            print command,
+            command = command +"\r\n"
             try:
                FSTs.sendto(command,(FST_ip, FST_port))
             except:
                print "Error sending to Festo"
+        print "\n"   
     except: 
         e = sys.exc_info()[0]
         print e

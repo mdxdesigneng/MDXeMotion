@@ -69,8 +69,9 @@ void setup()
  chkInvert = cp5.addCheckBox("invert")
     .setPosition(width-100, height - 80)
       .setSize(40, 40)
-        .setItemsPerRow(1)       
-          .addItem("Invert", 0)  ;
+        .setItemsPerRow(1)    
+          .setColorLabel(0)      
+            .addItem("Invert", 0)  ;
 
   btnDef = cp5.addButton("Change_Platform")
     .setValue(128)
@@ -87,7 +88,7 @@ void setup()
 
 
 void draw() { 
-  background(200); 
+  background(240); 
   
   if (thisClient !=null) {       
     String msg = thisClient.readStringUntil('\n'); 

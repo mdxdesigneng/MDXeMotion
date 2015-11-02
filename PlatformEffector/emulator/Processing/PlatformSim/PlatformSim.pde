@@ -32,6 +32,7 @@ boolean isChair;  // flag indicating chair or servo platform
 boolean isConnected = false;
 boolean echoToSerial = false;
 boolean dumpCSV = false;
+int BLACK = 0x0; 
 
 void setup()
 {
@@ -65,43 +66,50 @@ void setup()
 
   cp5.addSlider("posX")
     .setPosition(20, 20)
-      .setSize(180, 40).setRange(-1, 1);
+      .setSize(180, 40).setRange(-1, 1)
+        .setColorCaptionLabel(BLACK);
   cp5.addSlider("posY")
     .setPosition(20, 70)
-      .setSize(180, 40).setRange(-1, 1);
+      .setSize(180, 40).setRange(-1, 1)
+        .setColorCaptionLabel(BLACK);
   cp5.addSlider("posZ")
     .setPosition(20, 120)
-      .setSize(180, 40).setRange(-1, 1);
+      .setSize(180, 40).setRange(-1, 1)
+        .setColorCaptionLabel(BLACK);
 
   cp5.addSlider("rotX")
     .setPosition(width-210, 20)
-      .setSize(180, 40).setRange(-1, 1);
+      .setSize(180, 40).setRange(-1, 1)
+        .setColorCaptionLabel(BLACK);
   cp5.addSlider("rotY")
     .setPosition(width-210, 70)
-      .setSize(180, 40).setRange(-1, 1);
+      .setSize(180, 40).setRange(-1, 1)
+        .setColorCaptionLabel(BLACK);
   cp5.addSlider("rotZ")
     .setPosition(width-210, 120)
-      .setSize(180, 40).setRange(-1, 1);
+      .setSize(180, 40).setRange(-1, 1)
+        .setColorCaptionLabel(BLACK);
 
   chkSliders = cp5.addCheckBox("UseSliders")
     .setPosition(100, 200)
       .setSize(40, 40)
-        .setItemsPerRow(1)       
-          .addItem("Use Sliders", 0)  ;
+        .setItemsPerRow(1)  
+          .setColorLabel(BLACK)      
+            .addItem("Use Sliders", 0)  ;
 
   chkInvert = cp5.addCheckBox("invert")
     .setPosition(width-210, 220)
       .setSize(40, 40)
-        .setItemsPerRow(1)       
-          .addItem("Invert", 0)  ;
+        .setItemsPerRow(1)   
+          .setColorLabel(BLACK)     
+            .addItem("Invert", 0)  ;
 
   btnDef = cp5.addButton("Change_Platform")
     .setValue(128)
       .setPosition(width-210, 190)
         .setSize(80, 25)
-          .setCaptionLabel("Change Platform") 
-            .updateSize()
-              ;    
+          .setCaptionLabel("Change Platform")            
+            .updateSize() ;    
 
 
   cp5.setAutoDraw(false);
@@ -109,7 +117,7 @@ void setup()
 }
 
 void draw() { 
-  background(200);
+  background(225);
   // Get the next available client 
   Client thisClient = myServer.available(); 
   if (thisClient !=null) {       

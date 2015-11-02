@@ -16,14 +16,13 @@ csvFname = "active.csv"
 
 #default values used if CSV file not found
 _pressures=[400  ,500 ,1000,1500,2000,2500,3000,3500,4000,4500,5000]
-
+               
 def percentToPressure(percent):     
   try:
     percent = max(min(99.99, percent), 0) #clamp negative or 100+ values
     step = 100.0/ (len(_pressures)-1)
     index = int(percent/ step)     
-    musclePressure = scale((percent % step)*100/step, (0,100),( _pressures[index], _pressures[index+1]))                   
-    print  musclePressure     
+    musclePressure = scale((percent % step)*100/step, (0,100),( _pressures[index], _pressures[index+1]))                      
     return musclePressure
   except:
      e = sys.exc_info()[0]
@@ -69,12 +68,14 @@ def FST_send(percents):
     try:
         for idx, percent in enumerate(percents) :
             muscle = convertToPressure(idx, percent) #idx needed for Adjustsing the pressures for muscles 2,3
-            command = "maw"+str(64+idx)+"="+str(muscle)+"\r\n"
-            print command 
+            command = "maw"+str(64+idx)+"="+str(muscle)
+            print command,
+            command = command +"\r\n"
             try:
                FSTs.sendto(command,(FST_ip, FST_port))
             except:
                print "Error sending to Festo"
+        print "\n"   
     except: 
         e = sys.exc_info()[0]
         print e
@@ -82,10 +83,10 @@ def FST_send(percents):
     
 class MyTCPHandler(SocketServer.StreamRequestHandler):
         
-    def handle(self):   
-        while True:     
+    def handle(self):           
+        while True:           
             try:         
-                json_str = self.rfile.readline().strip()[2:]
+                json_str = self.rfile.readline().strip()[2:]                
                 if json_str != None:                          
                     #print json_str                  
                     #print "{} wrote:".format(self.client_address[0])       

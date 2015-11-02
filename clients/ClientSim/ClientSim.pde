@@ -30,6 +30,7 @@ CheckBox chkChair;  // sends to middleware when unchecked, to chair when checked
 PrintWriter output; // for csv output
 boolean isClientActive = false;
 
+int BLACK = 0x0; 
 
 void setup()
 {
@@ -56,45 +57,57 @@ void setup()
 
  cp5.addSlider("posX")
     .setPosition(20, 20)
-      .setSize(180, 40).setRange(-1, 1);
+      .setSize(180, 40).setRange(-1, 1)
+       .setColorCaptionLabel(BLACK);
   cp5.addSlider("posY")
     .setPosition(20, 70)
-      .setSize(180, 40).setRange(-1, 1);
+      .setSize(180, 40).setRange(-1, 1)
+        .setColorCaptionLabel(BLACK);
   cp5.addSlider("posZ")
     .setPosition(20, 120)
-      .setSize(180, 40).setRange(-1, 1);
+      .setSize(180, 40).setRange(-1, 1)
+        .setColorCaptionLabel(BLACK);
 
   cp5.addSlider("rotX")
     .setPosition(width-210, 20)
-      .setSize(180, 40).setRange(-1, 1);
+      .setSize(180, 40).setRange(-1, 1)
+        .setColorCaptionLabel(BLACK);
   cp5.addSlider("rotY")
     .setPosition(width-210, 70)
-      .setSize(180, 40).setRange(-1, 1);
+      .setSize(180, 40).setRange(-1, 1)
+        .setColorCaptionLabel(BLACK);
   cp5.addSlider("rotZ")
     .setPosition(width-210, 120)
-      .setSize(180, 40).setRange(-1, 1);
+      .setSize(180, 40).setRange(-1, 1)
+        .setColorCaptionLabel(BLACK);
 
   chkSend = cp5.addCheckBox("send")
     .setPosition(100, 200)
       .setSize(40, 40)
         .setItemsPerRow(1)   
-          .setColorActive(color(255,0,0))    
-          .addItem("Send", 0)  ;
+          .setColorActive(color(255,0,0))
+           .setColorLabel(BLACK)    
+             .addItem("Send", 0)  ;
           
   chkChair = cp5.addCheckBox("chair")
     .setPosition(100, 250)
       .setSize(40, 40)
         .setItemsPerRow(1)   
-          .setColorActive(color(255,0,0))    
-          .addItem("Chair", 0) ;          
+          .setColorActive(color(255,0,0)) 
+            .setColorLabel(BLACK)   
+              .addItem("Chair", 0) ;          
 
   cp5.setAutoDraw(false);
   camera.setActive(true); 
+  
+ 
+  String s = "{\"jsonrpc\":\"2.0\",\"method\":\"config\",\"ClientName\":\"ClientSim\"}\n";                                       
+  mwClient.write(s) ;  
 }
 
 
 void draw() { 
-  background(200);
+  background(225);
   
   mPlatform.applyTranslationAndRotation(PVector.mult(new PVector(posX, posY, posZ), MAX_TRANSLATION), 
                      PVector.mult(new PVector(rotY, rotX, rotZ), MAX_ROTATION));                     
@@ -106,18 +119,19 @@ void draw() {
           chairClient.write(s) ;
           isClientActive = true;      
           println(s);
-       }
-    }    
-    else if (mwClient !=null && mwClient.active()) {
-      // send to middleware
-        String s = String.format("{\"jsonrpc\":\"2.0\",\"method\":\"xyzrpy\",\"args\":[%f,%f,%f, %f,%f,%f]}\n",
-                      posX, posY, posZ,rotX, rotY, rotZ);                      
-        mwClient.write(s) ;
-        isClientActive = true;      
-        println(s);
+       }   
+       else if (mwClient !=null && mwClient.active()) {
+          // send to middleware
+            String s = String.format("{\"jsonrpc\":\"2.0\",\"method\":\"xyzrpy\",\"args\":[%f,%f,%f, %f,%f,%f]}\n",
+                          posX, posY, posZ,rotX, rotY, rotZ);                      
+            mwClient.write(s) ;
+            print(s);
+            isClientActive = true;      
+            println(s);
+         }
      } 
      else {
-       isClientActive = false;
+       isClientActive = false;      
      }     
  
 
@@ -128,7 +142,7 @@ void draw() {
   text("Press space to reset translations and rotations to 0",20,470); 
   if(chkSend.getState(0) && isClientActive == false) {
        fill(0);
-       text("Not connected",20,300); 
+       text("Not connected",20,340); 
   }
   cp5.draw();
   camera.endHUD();

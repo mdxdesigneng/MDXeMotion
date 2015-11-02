@@ -11,6 +11,8 @@ static class PlatformDef {
    float hornLength;
    float maxTranslation;
    float maxRotation;
+   float minActuatorLen;
+   float maxActuatorLen;
 }
 
 static final PlatformDef ServoPlatformDef = new  PlatformDef();
@@ -28,6 +30,8 @@ static final PlatformDef ServoPlatformDef = new  PlatformDef();
     ServoPlatformDef.hornLength = 30;
     ServoPlatformDef.maxTranslation = 40;
     ServoPlatformDef.maxRotation = 25;
+    ServoPlatformDef.minActuatorLen = 180.0;
+    ServoPlatformDef.maxActuatorLen = 220.0;
   } 
 
 
@@ -44,7 +48,10 @@ static final PlatformDef ChairPlatformDef = new  PlatformDef();
     ChairPlatformDef.hornLength = 0;
     ChairPlatformDef.maxTranslation = 40;
     ChairPlatformDef.maxRotation = 25;
+    ChairPlatformDef.minActuatorLen = 800;
+    ChairPlatformDef.maxActuatorLen = 700;
   } 
+
 
 PlatformDef gPlatformDef;  // only needed for servo angles 
 

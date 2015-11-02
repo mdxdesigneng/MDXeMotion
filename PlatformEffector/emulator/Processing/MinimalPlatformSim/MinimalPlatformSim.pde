@@ -66,7 +66,7 @@ void geometryReply(Client c) {
   JSONObject j = new JSONObject(); 
   j.setString("jsonrpc","2.0");
   j.setString("reply","geometry");
-  j.setString("effectorName","MinimalSimulator");    
+  j.setString("effectorName","PlatformSimulator");    
   j.setFloat("baseRadius", mPlatform.baseRadius);
   JSONArray baseArray = new JSONArray();
   for (int i = 0; i < 6; i++) {   
@@ -79,6 +79,13 @@ void geometryReply(Client c) {
     platformArray.setFloat(i, ChairPlatformDef.platformAngles[i]);    
   }  
   j.setJSONArray("platformAngles", platformArray);
+ 
+ 
+  JSONArray actuatorLen = new JSONArray();
+  actuatorLen.setFloat(0, ChairPlatformDef.minActuatorLen);    
+  actuatorLen.setFloat(1, ChairPlatformDef.maxActuatorLen);  
+  j.setJSONArray("actuatorLen", actuatorLen);
+  
  // j.setFloat("actuatorLen", mPlatform.actuatorLen);
   j.setFloat("initialHeight", ChairPlatformDef.initialHeight); // todo !!!
   j.setFloat("maxTranslation", ChairPlatformDef.maxTranslation);
