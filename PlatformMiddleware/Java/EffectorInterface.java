@@ -64,7 +64,6 @@ public class EffectorInterface {
 		try {
 		   effectorClient = new Socket(effectorIP, effectorPort);
 	       toEffector = new DataOutputStream(effectorClient.getOutputStream());
-	      // fromEffector = new DataInputStream( effectorClient.getInputStream()); 
 	       System.out.println("Middleware connected to Effector socket");	
 	       effectorGeometry = new effectorDef();
 	       if(requestGeometry())
@@ -205,5 +204,23 @@ public class EffectorInterface {
           
  		
 	}
+    
+    public void activateEffector(boolean activate) {
+        System.out.println("Activating:" + activate );
+        try {
+            if( activate ){
+               toEffector.writeUTF("{\"jsonrpc\":\"2.0\",\"method\":\"activate\"}\n");
+            }
+            else {
+                toEffector.writeUTF("{\"jsonrpc\":\"2.0\",\"method\":\"deactivate\"}\n");
+            }
+            
+        } catch (ConnectException e) {
+              System.out.println("error connecting when trying to set activation");          
+             }
+        catch (IOException e) {         
+             System.out.println("error setting effector activation:" + e.toString() );  
+        }
+    }
 
 }

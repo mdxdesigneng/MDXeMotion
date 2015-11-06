@@ -64,7 +64,7 @@ class RemoteController:
         self.reset_button = Button(master, text="EmergencyStop", command=self.emergencyStop)
         self.reset_button.pack(side = LEFT,padx=(8,4))   
         
-        self.close_button = Button(master, text="Close", command=self.quit)
+        self.close_button = Button(master, text="quit", command=self.quit)
         self.close_button.pack(side = BOTTOM, padx=8)
         
         self.connect()
@@ -140,9 +140,11 @@ class RemoteController:
            print 'Could not connect to server %s' % ip1, e 
        time.sleep(2.0)    
     
-    def quit(self):
+    def quit(self):  
+       msg = '{"action":"quit"}'
        try: 
-           if self.sock1:    
+           if self.sock1:  
+               self.sock1.sendall(msg)            
                self.sock1.close()       
            if self.sock2:              
                self.sock2.close()                  
@@ -152,7 +154,7 @@ class RemoteController:
     
 if __name__ == "__main__": 
     identifyConsoleApp()
-    print "NL2 key/mouse remote controller"    
+    print "NL2 key/mouse remote controller"
     print "Run this after starting local controllers"     
     args = (sys.argv)
     if len(args) > 1 :   

@@ -23,13 +23,16 @@ class middlewareClient():
         v = value / scale
         return max(min(1.0, v),-1) # clamp the return value
 
+    def send(self,msg):          
+        self.platformSock.sendall(msg)
+        
     def sendXyzrpy(self, units, args):
         msg = self.encodeXyzrpy(units, args)
-        print "sending: ", msg
-        self.platformSock.send(msg)
+        ##print "sending: ", msg
+        self.send(msg)
         
     def sendEncodedConfig(self, msg):
-        self.platformSock.send(msg)    
+        self.send(msg)    
         
     #raw {"jsonrpc":"2.0","method":"raw","units":"real","args":[0, 0, 0, 0, 0, 0],"id": null}
     def encodeRaw(self, units, values):
@@ -69,4 +72,13 @@ class middlewareClient():
     def sendClientName(self, name):
        data = OrderedDict([("jsonrpc","2.0"),("method","config"),("ClientName",name)])
        msg = json.dumps(data, separators=(',',':')) + '\n'
-       self.platformSock.send(msg) 
+       self.send(msg) 
+    
+    def sendActivate(self, isActive):
+        if isActive:
+           data = OrderedDict([("jsonrpc","2.0"),("method","activate")])
+           msg = json.dumps(data, separators=(',',':')) + '\n'
+        else:   
+           data = OrderedDict([("jsonrpc","2.0"),("method","deactivate")])
+           msg = json.dumps(data, separators=(',',':')) + '\n'      
+        self.send(msg)        

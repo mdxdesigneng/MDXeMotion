@@ -70,8 +70,20 @@ public class PlatformMiddleware {
     
     private void processMsg(PlatformApi.msgFields msg) {
         // System.out.format("pre shape: %f,%f,%f, %f,%f,%f\n",msg.v[0], msg.v[1], msg.v[2],msg.v[3], msg.v[4], msg.v[5]);
-            
-           if( msg.isRaw ) {
+           
+    	   if(msg.isActivate){
+    		   PlatformApi.activateMsg m = (PlatformApi.activateMsg)msg;
+    		   if( m.isActive){
+    			   System.out.println("activating");
+    			   effectorItf.activateEffector(true);
+    		   }
+    		   else{
+    			   System.out.println("deactivating");
+    			   effectorItf.activateEffector(false);
+    		   }
+    			   
+    	   }
+    	   else if( msg.isRaw ) {
                // todo - need transform to produce xyzrpy values
                // for now, only raw data is sent in the event message
                float[] xyz = {0,0,0,0,0,0}; // xyz data is zero for now
@@ -82,10 +94,11 @@ public class PlatformMiddleware {
                msg = PlatformApi.shapeData((PlatformApi.xyzMsg)msg); // apply gain and washout only if xyzMsg          
                transform.applyTranslationAndRotation(new PVector(msg.v[0], msg.v[1], msg.v[2]),
                                                      new PVector(msg.v[3], msg.v[4], msg.v[5]));
-               // System.out.format("after shape: %f,%f,%f, %f,%f,%f\n",msg.v[0], msg.v[1], msg.v[2],msg.v[3], msg.v[4], msg.v[5]);                      
+               System.out.format("middleware out: %f,%f,%f, %f,%f,%f\n",msg.v[0], msg.v[1], msg.v[2],msg.v[3], msg.v[4], msg.v[5]);                      
                float rawVal[] = new float[6];
                for(int i=0; i < 6; i++ ) {
-                   rawVal[i] = transform.getRawLength(i);             
+                   rawVal[i] = transform.getRawLength(i);
+                   System.out.print(i); System.out.print("="); System.out.println(rawVal[i]);
                } 
                //effectorItf.sendXyzrpy((PlatformApi.xyzMsg)msg);
                effectorItf.sendMoveEvent( rawVal, msg.v);
@@ -110,9 +123,22 @@ public class PlatformMiddleware {
         x=y=z= (float)0.999;
         msg1=  api.createTestMsg(x,y,z);
         processMsg(msg1);
+        PlatformApi.activateMsg msg;
+        try{
+           msg=  api.createTestMsg(false);        
+           processMsg(msg);		
+           Thread.sleep(3000);
+           msg=  api.createTestMsg(true);        
+           processMsg(msg);		
+           Thread.sleep(3000);
+        } catch (InterruptedException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }   		
         x=y=z= (float)-0.999;
         msg1=  api.createTestMsg(x,y,z);
-        processMsg(msg1);               
+        processMsg(msg1);
+      
         
     }
     
@@ -231,7 +257,7 @@ public class PlatformMiddleware {
             System.exit(0); 
             return; // exit if cannot connect to effector
         }
-        pm.sendTestMsgs();
+        //pm.sendTestMsgs();
         try {
             msgQueue = new LinkedList<PlatformApi.msgFields>();
             

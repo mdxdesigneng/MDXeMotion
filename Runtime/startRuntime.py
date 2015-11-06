@@ -26,12 +26,6 @@ nl2Client = 'CoasterClient.py'
 print "starting client:", nl2Client
 os.startfile(nl2Client)
 
-
-localController ='LocalController.py'
-print "starting local controller", localController
-os.startfile(localController)
-time.sleep(1)
-
 # if remote runs on this machine, start remote controller
 remoteController = 'RemoteController.py'
 print "starting remote controller", remoteController

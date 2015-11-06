@@ -29,18 +29,24 @@ public class PlatformApi extends Thread {
 	public static String clientName; // optional name of saved configuration file to load
 	public abstract class msgFields {		
 		public boolean isRaw;		
+		public boolean isActivate;
 		public float v[];
 		public msgFields() {
 		   v = new float[6];
 		}	
 	}
 	
+	public class activateMsg extends msgFields {
+		public activateMsg() {isRaw=false; isActivate=true;}
+		boolean isActive;
+	}
+	
 	public class rawMsg extends msgFields {
-		public rawMsg() {isRaw = true;}
+		public rawMsg() {isRaw=true; isActivate=false;}
 	}
 
 	public class xyzMsg extends msgFields {
-		public xyzMsg() {isRaw = false;}
+		public xyzMsg() {isRaw = false; isActivate=false;}
 		
 		float getX()    { return v[0]; }
 		float getY()    { return v[1]; } 
@@ -132,6 +138,12 @@ public class PlatformApi extends Thread {
 		    msg.setZ(z); 
 		    return msg;		
 	}
+
+	public  activateMsg createTestMsg(boolean isActive) {
+	    activateMsg msg = new activateMsg();		
+	    msg.isActive = isActive;	  
+	    return msg;		
+    }
 	
 	public static xyzMsg shapeData(xyzMsg msg) {
 	    msg.setX( msg.getX() * cfg.gainX * cfg.gainMaster);
@@ -140,7 +152,7 @@ public class PlatformApi extends Thread {
 	    msg.setRoll( msg.getRoll() * cfg.gainRoll * cfg.gainMaster);
 	    msg.setPitch(msg.getPitch() * cfg.gainPitch * cfg.gainMaster);
 	    msg.setYaw(msg.getYaw() * cfg.gainYaw *cfg.gainMaster);
-	    
+	  
 	    // calculate washout
 	    washedX = (cfg.washoutX * washedX) + washoutGain*( msg.getX() - prevX); 
 	    prevX = msg.getX();
@@ -215,7 +227,7 @@ public class PlatformApi extends Thread {
 	}
 
 	void parseXyzrpy(boolean isNormalized, JSONArray values) {
-		// System.out.print(" parseXyzrpy "); System.out.println( values);
+		//System.out.print(" parseXyzrpy "); System.out.println( values);
 		if (isNormalized) { // for now, only add if normalised - todo
 			xyzMsg msg = new xyzMsg();
 			// System.out.println(values);
@@ -391,6 +403,20 @@ public class PlatformApi extends Thread {
 					if ((boolean) (jsonObject.get("method").equals("config"))) {
 						parseConfig(jsonObject);
 						//printConfig();
+					}
+				    else if ((boolean) (jsonObject.get("method").equals("activate"))){				    	
+				    	activateMsg m = new activateMsg();							
+						m.isActive = true;				    	
+						this.lock.lock();
+						PlatformMiddleware.msgQueue.add(m);
+						this.lock.unlock();
+				    } else if ((boolean) (jsonObject.get("method").equals("deactivate")))  {
+				    	activateMsg m = new activateMsg();							
+						m.isActive = false;				    	
+						this.lock.lock();
+						PlatformMiddleware.msgQueue.add(m);
+						this.lock.unlock();
+				    	
 					} else // its a movement message?, parse fields
 					{
 						// print(json1);
