@@ -6,14 +6,15 @@ import time
 from serial import *
 from setConsoleCaption import identifyConsoleApp
 
-serialPort = "COM25"
-baudRate = 9600
+serialPort = "COM8"
+baudRate = 57600
 ser = Serial(serialPort , baudRate, timeout=0, writeTimeout=0) 
 serBuffer = ""
 
-ip1 = 'localhost'
-ip2 = '' #'192.168.1.21'
-remote_port = 10007
+# remote control receiver addresses:
+#addresses =  ( ('localhost',10007), ('192.168.1.21',10007))
+addresses =  ( ('localhost',10007),('localhost',10008))
+
 buffer_size = 64   
    
 states = { "ready" : 0, "running" : 1,  "paused" : 2, "stopped" : 3} 
@@ -34,11 +35,50 @@ def pollSerial():
     state = states[controller.getState()]
     ser.write(state)     
     root.after(20, pollSerial) 
-        
+ 
+class Sender:
+    def __init__(self, addr):
+        self.addr = addr         
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.timeout = 2
+        self.sock.settimeout(self.timeout)
+        self.isConnected = False 
+        print addr
+         
+   
+    def send(self, msg):                
+         if self.sock:
+            if not self.isConnected:
+               self.connect()
+            if self.isConnected:
+               try:
+                   self.sock.sendall(msg)
+                   print "sending ",msg[:-2], ' to ', self.addr
+               except socket.error, e:
+                   print 'Could not connect to server'
+                   print self.addr 
+                   print e                     
+                   
+    def connect(self):
+       try:                     
+            self.sock.connect(self.addr)          
+            print('Remote controller connected to ', self.addr)
+            self.isConnected = True                                     
+       except socket.error, e:
+           print 'Could not connect to server,',  e 
+    
+    def quit(self, quitMsg):
+        self.send(quitMsg)
+        self.sock.shutdown(socket.SHUT_RDWR)
+        time.sleep(self.timeout + 1)
+        self.sock.close()
+
+    
 class RemoteController:
-    def __init__(self, master):
-        self.sock1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    def __init__(self, master, addresses):
+        self.senders = [] 
+        for adr in addresses:          
+           self.senders.append( Sender(adr)) 
         
         self.actions = { 'pause' : self.pause, 'dispatch' : self.dispatch,  'reset' : self.reset, 'emergencyStop' : self.emergencyStop} 
         self.state = 'ready'
@@ -66,8 +106,7 @@ class RemoteController:
         
         self.close_button = Button(master, text="quit", command=self.quit)
         self.close_button.pack(side = BOTTOM, padx=8)
-        
-        self.connect()
+              
         self.isPaused = False
      
     def getState(self):  
@@ -119,52 +158,20 @@ class RemoteController:
     
     def sendMsg(self, buttonStr, state):        
          msg = buttonStr + ',"state":"' + state +'"}\n' 
-         if self.sock1:           
-            self.sock1.sendall(msg)             
-         if self.sock2:          
-            self.sock2.sendall(msg)          
-        
-    def connect(self):
-       try: 
-           if len(ip1) > 0: 
-               self.sock1.connect((ip1, remote_port))  
-               print('Remote controller connected to ' + ip1)  
-           else:
-               self.sock1 = None
-           if len(ip2) > 0: 
-               self.sock2.connect((ip2, remote_port))  
-               print('Remote controller connected to ' + ip2)
-           else:
-               self.sock2 = None               
-       except socket.error, e:
-           print 'Could not connect to server %s' % ip1, e 
-       time.sleep(2.0)    
+         for s in self.senders:
+            s.send(msg)
     
     def quit(self):  
        msg = '{"action":"quit"}'
-       try: 
-           if self.sock1:  
-               self.sock1.sendall(msg)            
-               self.sock1.close()       
-           if self.sock2:              
-               self.sock2.close()                  
-       except socket.error, e:
-           print 'error closing socket ' , e 
+       for s in self.senders:
+           s.quit(msg)         
        self.master.quit 
-    
+
+     
 if __name__ == "__main__": 
     identifyConsoleApp()
-    print "NL2 key/mouse remote controller"
-    print "Run this after starting local controllers"     
-    args = (sys.argv)
-    if len(args) > 1 :   
-       print args
-       ip1 = args[1]
-       if len(args) > 2 : 
-           ip2 = args[2]
-       
-    print ip1
+    print "NL2 key/mouse remote controller"   
     root = Tk()
-    controller = RemoteController(root) 
+    controller = RemoteController(root, addresses) 
     root.after(20, pollSerial) 
     root.mainloop()

@@ -47,27 +47,30 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
                 c = getch()                
                 if ord(c) == 27: # ESC
                     sys.exit([0])
-                         
-            json_str = self.rfile.readline().strip()            
-            if json_str != None:                          
-                #print "{} wrote:".format(self.client_address[0])
-                try:   
-                    j = json.loads(json_str)
-                    state = j['state']                   
-                    if state != None:
-                        self.stateChange(state)                            
-                    action = j['action']
-                    if action != None:                
-                       self.dispatcher[action](self)  
-                    else:
-                       print 'unable to dispatch', json_str                                   
-                except ValueError:                   
-                    pass
-                
+            try:             
+                json_str = self.rfile.readline().strip()            
+                if json_str != None:                          
+                    #print "{} wrote:".format(self.client_address[0])
+                    try:   
+                        j = json.loads(json_str)
+                        state = j['state']                   
+                        if state != None:
+                            self.stateChange(state)                            
+                        action = j['action']
+                        if action != None:                
+                           self.dispatcher[action](self)  
+                        else:
+                           print 'unable to dispatch', json_str                                   
+                    except ValueError:                   
+                        pass
+            except socket.error, e:
+                print e
+                break
+                    
 
 
 if __name__ == "__main__":
-    HOST, PORT = '', 10007
+    HOST, PORT = '', 10008
     
     identifyConsoleApp()
     # Create the server, binding to localhost on port effector port

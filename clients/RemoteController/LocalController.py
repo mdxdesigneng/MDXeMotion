@@ -73,7 +73,7 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
         if self.isCursorVisible:
            testReset()
         else:
-        mouse.invisible_click_rel( windowHandle,resetPoint)        
+           mouse.invisible_click_rel( windowHandle,resetPoint)        
            time.sleep(0.5)
            mouse.invisible_click_rel( windowHandle,(300,300)) # move mouse to remove reset tool tip        
         
