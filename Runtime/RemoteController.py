@@ -1,5 +1,5 @@
 from Tkinter import *
-import socket
+import socket,errno
 import json
 import sys
 import time
@@ -53,19 +53,25 @@ class Sender:
             if self.isConnected:
                try:
                    self.sock.sendall(msg)
-                   print "sending ",msg[:-2], ' to ', self.addr
-               except socket.error, e:
-                   print 'Could not connect to server'
-                   print self.addr 
-                   print e                     
+                   print "Sending ",msg[:-1], ' to ', self.addr                                 
+               except socket.error as e:
+                   if e.errno == errno.ECONNREFUSED:
+                       print 'Could not connect to remote: ',
+                       print self.addr 
+                   else:                   
+                       print e                 
                    
     def connect(self):
        try:                     
-            self.sock.connect(self.addr)          
+            self.sock.connect(self.addr)           
             print('Remote controller connected to ', self.addr)
             self.isConnected = True                                     
-       except socket.error, e:
-           print 'Could not connect to server,',  e 
+       except socket.error as e:   
+           if e.errno == errno.ECONNREFUSED:
+               print 'Could not connect to remote: ',
+               print self.addr 
+           else:                   
+               print e  
     
     def quit(self, quitMsg):
         self.send(quitMsg)
@@ -124,8 +130,9 @@ class RemoteController:
         if self.isPaused:
             self.pause() # turn pause off before dispatch
         self.state = 'running'
-        self.sendMsg('{"action":"dispatch"',self.state)           
         print("Dispatch")
+        self.sendMsg('{"action":"dispatch"',self.state)           
+     
     
     def pause(self):
         if self.isPaused: 
@@ -142,24 +149,27 @@ class RemoteController:
         if self.isPaused:           
             self.pause() # turn pause off before reset           
         self.state = 'ready'
-        self.sendMsg('{"action":"reset"',self.state)
         print("Reset") 
+        self.sendMsg('{"action":"reset"',self.state)
+  
         
     def emergencyStop(self):
         if self.isPaused:
             print "Already paused"
         else:
             self.pause()
-            self.state = 'stopped'
+            self.state = 'Emergency stopped'
+            print("Emergency Stop")
             self.sendMsg('{"action":"emergencyStop"',self.state)
            # msg = '{"action":"emergencyStop","state":self.state}\n'
             #sock1.sendall(msg)   
-            print("Emergency Stop")
+        
     
     def sendMsg(self, buttonStr, state):        
          msg = buttonStr + ',"state":"' + state +'"}\n' 
          for s in self.senders:
             s.send(msg)
+         print("\n")   
     
     def quit(self):  
        msg = '{"action":"quit"}'

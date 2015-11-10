@@ -10,6 +10,7 @@ import SocketServer
 import time
 import msvcrt  # for kbhit
 from setConsoleCaption import identifyConsoleApp
+import errno
 
       
 def getch():
@@ -63,9 +64,15 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
                            print 'unable to dispatch', json_str                                   
                     except ValueError:                   
                         pass
-            except socket.error, e:
-                print e
-                break
+            except socket.error as e:
+                if e.errno == errno.ECONNREFUSED:
+                    print "connection refused"
+                if e.errno == errno.WSAECONNRESET:                   
+                    print "Connection closed by remote, restart remote controller" 
+                    break
+                else:
+                    print e
+                    break
                     
 
 
