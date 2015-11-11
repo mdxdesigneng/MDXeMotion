@@ -183,7 +183,7 @@ class Platform {
         line(A[i].x, A[i].y, A[i].z, rod.x, rod.y, rod.z);
     }
 
-    // draw phone jointss and rods
+    // draw planes, joints and rods
     for (int i=0; i<6; i++) {
       pushMatrix();
       translate(q[i].x, q[i].y, q[i].z);

@@ -105,7 +105,7 @@ void draw() {
               println("check invert");
             } else {
               mPlatform.applyTranslationAndRotation(PVector.mult(new PVector(m.x, m.y, m.z), MAX_TRANSLATION), 
-              PVector.mult(new PVector(-m.pitch, m.roll, m.yaw), MAX_ROTATION));
+              PVector.mult(new PVector(-m.pitch, m.roll, -m.yaw), MAX_ROTATION));
             }
 
             String outMsg = String.format("xyzrpy,%f,%f,%f,%f,%f,%f\n", m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
@@ -123,8 +123,12 @@ void draw() {
   hint(DISABLE_DEPTH_TEST);
   camera.beginHUD();
   fill(0);
-  for (int i=0; i < 6; i++) {
-    text(String.format("%.1f", mPlatform.l[i].mag() / mPlatform.scale), 20, 400 + (30*i)); // show lengths
+  stroke(48);
+  strokeWeight(4);
+  for (int i=0; i < 6; i++) {    
+    //text(String.format("%.1f", mPlatform.l[i].mag() / mPlatform.scale), 20, 400 + (30*i)); // show lengths
+    float l = mPlatform.l[i].mag() / (mPlatform.scale * 8);  
+    line((i*16)+20, 450-l, (i*16)+20, 450+l);
   }
 
 
