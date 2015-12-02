@@ -21,14 +21,13 @@ import org.json.simple.parser.ParseException;
 
 /*
  * Module defining interface and methods to the middleware server
- * message received on a thread are parsed and queued for handling by the main module
+ * messages received on a thread are parsed and queued for handling by the main module
  */
 
 public class PlatformApi extends Thread {
 	
 	public static String clientName; // optional name of saved configuration file to load
 	public abstract class msgFields {		
-		public boolean isRaw;		
 		public boolean isActivate;
 		public float v[];
 		public msgFields() {
@@ -37,16 +36,12 @@ public class PlatformApi extends Thread {
 	}
 	
 	public class activateMsg extends msgFields {
-		public activateMsg() {isRaw=false; isActivate=true;}
+		public activateMsg() {isActivate=true;}
 		boolean isActive;
-	}
-	
-	public class rawMsg extends msgFields {
-		public rawMsg() {isRaw=true; isActivate=false;}
 	}
 
 	public class xyzMsg extends msgFields {
-		public xyzMsg() {isRaw = false; isActivate=false;}
+		public xyzMsg() {isActivate=false;}
 		
 		float getX()    { return v[0]; }
 		float getY()    { return v[1]; } 
@@ -198,32 +193,6 @@ public class PlatformApi extends Thread {
     	  // use default if any error
       }
 	 return val;
-	}
-
-	void parseRaw(boolean isNormalized, JSONArray values) {
-		// System.out.print(" parseRaw "); System.out.println( values);
-		if (isNormalized) { // for now, only add if normalised - todo
-			rawMsg msg = new rawMsg();
-			try {
-				msg.v[0] = Float.valueOf(values.get(0).toString()).floatValue();
-				msg.v[1] = Float.valueOf(values.get(1).toString()).floatValue();
-				msg.v[2] = Float.valueOf(values.get(2).toString()).floatValue();
-				msg.v[3] = Float.valueOf(values.get(3).toString()).floatValue();
-				msg.v[4] = Float.valueOf(values.get(4).toString()).floatValue();
-				msg.v[5] = Float.valueOf(values.get(5).toString()).floatValue();
-
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			this.lock.lock();
-			PlatformMiddleware.msgQueue.add(msg);
-			this.lock.unlock();
-		}
-		else
-		{
-		   // todo - scale non normalized values	
-		}
 	}
 
 	void parseXyzrpy(boolean isNormalized, JSONArray values) {
@@ -427,10 +396,8 @@ public class PlatformApi extends Thread {
 						    else if ((boolean) (jsonObject.get("units").equals("norm")))
 							    isNormalized = true; // default, but set anyway	
 						}
-						JSONArray values = (JSONArray) jsonObject.get("args");
-						if ((boolean) (jsonObject.get("method").equals("raw")))
-							parseRaw(isNormalized, values);
-						else if ((boolean) (jsonObject.get("method").equals("xyzrpy")))
+						JSONArray values = (JSONArray) jsonObject.get("args");					
+					    if ((boolean) (jsonObject.get("method").equals("xyzrpy")))
 							parseXyzrpy(isNormalized, values);
 					}
 				}

@@ -11,7 +11,7 @@ import org.json.simple.parser.JSONParser;
 
 
 /*
- *  Main module for middleware test harness
+ *  Main module for motion platform middleware
  *  Handles messages from clients queued in PlatformItf thread.
  *  After data is processed for gain and washout, raw muscle lengths
  *  are calculated from rotational data and sent to the MDX platform 
@@ -23,7 +23,6 @@ public class PlatformMiddleware {
     private PlatformApi api;  // handles incoming messages
     private PlatfromTransforms transform; // handles movement transforms
     private EffectorInterface effectorItf; // interface to mover and watchers
-    private Gui gui;
     private String effectorName;
     
     private static InetAddress effectorIp = null;;
@@ -37,9 +36,9 @@ public class PlatformMiddleware {
         this.api = new PlatformApi(lock);       
     }
      
-    private boolean begin(InetAddress ip, int port, int watcherPort){
+    private void begin(InetAddress ip, int port, int watcherPort){
        // Connect to effector (and watchers) on the given ports...
-       // this now loops until it can connect to chair (so never returns false)      
+       // this loops until it can connect to chair      
        while(true) { 	
           EffectorInterface.effectorDef def = effectorItf.begin(ip, port, watcherPort);
           if(def != null) {        
@@ -58,7 +57,7 @@ public class PlatformMiddleware {
        Gui.updateLabels("out", effectorName + " Connected");
        //this.api.getConfigArray(); 
        System.out.println("Waiting for client (restart client if already running)");
-       return true;
+       return;
     }
     
     private void end(){
@@ -71,7 +70,7 @@ public class PlatformMiddleware {
     private void processMsg(PlatformApi.msgFields msg) {
         // System.out.format("pre shape: %f,%f,%f, %f,%f,%f\n",msg.v[0], msg.v[1], msg.v[2],msg.v[3], msg.v[4], msg.v[5]);
            
-    	   if(msg.isActivate){
+    	   if(msg.isActivate){  // activate or deactivate the platform
     		   PlatformApi.activateMsg m = (PlatformApi.activateMsg)msg;
     		   if( m.isActive){
     			   System.out.println("activating");
@@ -83,14 +82,8 @@ public class PlatformMiddleware {
     		   }
     			   
     	   }
-    	   else if( msg.isRaw ) {
-               // todo - need transform to produce xyzrpy values
-               // for now, only raw data is sent in the event message
-               float[] xyz = {0,0,0,0,0,0}; // xyz data is zero for now
-               effectorItf.sendMoveEvent( msg.v, xyz);
-               
-           }
            else {
+        	   // its a movement message - todo add error checking here
                msg = PlatformApi.shapeData((PlatformApi.xyzMsg)msg); // apply gain and washout only if xyzMsg          
                transform.applyTranslationAndRotation(new PVector(msg.v[0], msg.v[1], msg.v[2]),
                                                      new PVector(msg.v[3], msg.v[4], msg.v[5]));
@@ -99,8 +92,7 @@ public class PlatformMiddleware {
                for(int i=0; i < 6; i++ ) {
                    rawVal[i] = transform.getRawLength(i);
                    System.out.print(i); System.out.print("="); System.out.println(rawVal[i]);
-               } 
-               //effectorItf.sendXyzrpy((PlatformApi.xyzMsg)msg);
+               }               
                effectorItf.sendMoveEvent( rawVal, msg.v);
                
                Gui.updateActuators(rawVal);
@@ -191,72 +183,14 @@ public class PlatformMiddleware {
         System.out.println(String.format("Primary Effector %s:%d, watcher port %d",
                 effectorIp.getHostAddress(),effectorPort, watcherPort ));
         return true; // todo return false if error reading file ???
-    }
-        
-    
-    
-    private static boolean parseArgs(String[] args) {
-        try {
-            effectorIp = InetAddress.getLocalHost();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }                   
-        
-        System.out.println("Platform Middleware Prototype");
-        if(args.length > 0) {
-            String hostname = args[0];
-            try  {
-              effectorIp = InetAddress.getByName(args[0]);         
-            }
-            catch ( UnknownHostException e )  {
-              System.out.println("Could not find IP address for: " + hostname);
-              return false;
-            }
-            if(args.length > 1) {
-                 try {
-                      effectorPort = Integer.parseInt(args[1]);
-                    } catch (NumberFormatException e) {
-                        System.err.println("Argument" + args[1] + " (port)  must be an integer.");
-                        return false;
-                    }                                     
-                    if(args.length > 2) { 
-                        try {
-                            watcherPort = Integer.parseInt(args[2]);
-                         } catch (NumberFormatException e) {
-                            System.err.println("Argument" + args[2] + " (port)  must be an integer.");
-                            return false;
-                         }
-                     
-                    }
-              } 
-        }
-        else {
-            try {
-            effectorIp = InetAddress.getByName("localhost");  // todo 
-            } catch (UnknownHostException e1) {
-                System.out.println("Could not get local host  IP address");
-                return false;
-                
-            }
-        }
-        System.out.println(String.format("Primary Effector %s:%d, watcher port %d",
-                    effectorIp.getHostAddress(),effectorPort, watcherPort ));
-         return true;
-    
-    }
-    
-    
+    }   
+   
     public static void main(String[] args) {        
         if(!readConfigFile()){  // get optional ip address overrides 
              System.exit(-1);
-        }
-
-                
+        }                
         PlatformMiddleware pm = new PlatformMiddleware();       
-        if(!pm.begin(effectorIp, effectorPort, watcherPort)){           
-            System.exit(0); 
-            return; // exit if cannot connect to effector
-        }
+        pm.begin(effectorIp, effectorPort, watcherPort); 
         //pm.sendTestMsgs();
         try {
             msgQueue = new LinkedList<PlatformApi.msgFields>();
