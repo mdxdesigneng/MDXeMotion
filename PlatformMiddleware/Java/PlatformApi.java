@@ -387,6 +387,7 @@ public class PlatformApi extends Thread {
 						this.lock.unlock();
 				    	
 					} else // its a movement message?, parse fields
+						// todo - reorg this so test for method == xyzrpy is done before other parsing
 					{
 						// print(json1);
 						boolean isNormalized = true;
