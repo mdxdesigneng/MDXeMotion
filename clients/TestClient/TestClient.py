@@ -9,7 +9,7 @@ from struct import *
 import collections
 import sys
 
-interval = 2.02 # interval in secs between messages to middleware
+interval = 0.02 # interval in secs between messages to middleware
 period   = 1.0  # time in secs to move from neutral to extremes     
 step = 1.0 / (period / interval) # how much to move each interval
 currentPos = 0.0;
